@@ -35,8 +35,8 @@ namespace Eto.VisualStudioWizards
 			get
 			{
 				var icon = Icon.FromResource("Eto.VisualStudioWizards.Eto.Project.ico");
-				yield return new ProjectTypeDefinition { Type = ProjectType.Pcl, Name = "Portable Class Library", Description = "Create a portable class library for your shared UI for maximum portability", Image = icon };
-				yield return new ProjectTypeDefinition { Type = ProjectType.Full, Name = "Full .NET", Description = "Use the full .NET framework for your shared UI, for maximum compatibility with 3rd party libraries and Xaml support", Image = icon };
+				yield return new ProjectTypeDefinition { Type = ProjectType.Pcl, Name = "Portable Class Library", Description = "Create a portable class library for maximum portability", Image = icon };
+				yield return new ProjectTypeDefinition { Type = ProjectType.Full, Name = "Full .NET", Description = "Use the full .NET framework for maximum compatibility with 3rd party libraries", Image = icon };
 				yield return new ProjectTypeDefinition { Type = ProjectType.Sal, Name = "Shared Asset Library", Description = "Share the code and use #IFDEF's for platform-specific functionality", Image = icon };
 			}
 		}
@@ -57,7 +57,7 @@ namespace Eto.VisualStudioWizards
 				var currentDef = def;
 				var button = new Button { Size = new Size(-1, 100), Text = def.Name, Image = def.Image, ImagePosition = ButtonImagePosition.Above };
 				button.Click += (sender, e) => Close(currentDef.Type);
-				layout.Rows.Add(new TableRow (button, new Label { Text = def.Description, VerticalAlign = VerticalAlign.Middle }));
+				layout.Rows.Add(new TableRow (button, new Label { Text = def.Description, VerticalAlignment = VerticalAlignment.Center }));
 			}
 
 			Content = new TableLayout

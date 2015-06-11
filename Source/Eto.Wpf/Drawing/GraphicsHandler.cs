@@ -23,7 +23,7 @@ namespace Eto.Wpf.Drawing
 		double offset = 0.5;
 		double inverseoffset;
 		RectangleF? clipBounds;
-		readonly RectangleF initialClip;
+		RectangleF initialClip;
 		swm.PathGeometry clipPath;
 		sw.Rect bounds;
 		readonly bool disposeControl;
@@ -49,7 +49,7 @@ namespace Eto.Wpf.Drawing
 
 		public float PointsPerPixel
 		{
-			get { return (float)DPI * 72f / 96f; }
+			get { return 72f / 96f; }
 		}
 
 		protected override bool DisposeControl { get { return disposeControl; } }
@@ -77,7 +77,8 @@ namespace Eto.Wpf.Drawing
 		public void CreateFromImage(Bitmap image)
 		{
 			this.image = image;
-			bounds = new sw.Rect(0, 0, image.Size.Width, image.Size.Height);
+			initialClip = new RectangleF(0, 0, image.Width, image.Height);
+			bounds = initialClip.ToWpf();
 			drawingVisual = new swm.DrawingVisual();
 			visual = drawingVisual;
 			Control = drawingVisual.RenderOpen();
@@ -324,9 +325,13 @@ namespace Eto.Wpf.Drawing
 				Control.Close();
 				var handler = (BitmapHandler)image.Handler;
 				var bmp = handler.Control;
-				var newbmp = new swmi.RenderTargetBitmap(bmp.PixelWidth, bmp.PixelHeight, bmp.DpiX, bmp.DpiY, swm.PixelFormats.Pbgra32);
+				var newbmp = bmp as swmi.RenderTargetBitmap;
+				if (newbmp == null)
+				{
+					newbmp = new swmi.RenderTargetBitmap(bmp.PixelWidth, bmp.PixelHeight, bmp.DpiX, bmp.DpiY, swm.PixelFormats.Pbgra32);
+					handler.SetBitmap(newbmp);
+				}
 				newbmp.Render(visual);
-				handler.SetBitmap(newbmp);
 				return true;
 			}
 			return false;
@@ -383,8 +388,8 @@ namespace Eto.Wpf.Drawing
 				baseContext = Control;
 			group = new swm.DrawingGroup();
 			Control = group.Open();
-			TransformStack.PushAll();
 			ApplyClip();
+			TransformStack.PushAll();
 		}
 
 		void CloseGroup()
@@ -542,8 +547,8 @@ namespace Eto.Wpf.Drawing
 				Control.DrawImage(newbmp, bounds);
 				Control.Pop();
 
-				TransformStack.PushAll();
 				ApplyClip();
+				TransformStack.PushAll();
 			}
 			else
 			{
