@@ -3,9 +3,18 @@ using System.Globalization;
 using Eto.Drawing;
 using Eto.Forms;
 using Eto.GtkSharp.Drawing;
+using Eto.GtkSharp.Forms;
 
 namespace Eto.GtkSharp
 {
+	public enum GtkStateFlags
+	{
+		Normal,
+		Active,
+		Prelight,
+		Insensitive
+	}
+
 	public static class GtkConversions
 	{
 		public static Gdk.Color ToGdk(this Color color)
@@ -17,18 +26,6 @@ namespace Eto.GtkSharp
 		{
 			return new Cairo.Color((double)color.R, (double)color.G, (double)color.B, (double)color.A);
 		}
-
-		#if GTK3
-		public static Cairo.Color ToCairo(this Gdk.RGBA color)
-		{
-			return new Cairo.Color(color.Red, color.Green, color.Blue, color.Alpha);
-		}
-
-		public static Gdk.RGBA ToRGBA(this Color color)
-		{
-			return new Gdk.RGBA { Red = color.R, Green = color.G, Blue = color.B, Alpha = color.A };
-		}
-#endif
 
 		public static Color ToEto(this Cairo.Color color)
 		{
@@ -583,6 +580,16 @@ namespace Eto.GtkSharp
 		public static Font ToEto(this Pango.FontDescription fontDesc, string familyName = null)
 		{
 			return fontDesc == null ? null : new Font(new FontHandler(fontDesc, familyName));
+		}
+
+		public static Gtk.Window ToGtk(this Window window)
+		{
+			if (window == null)
+				return null;
+			var gtkWindow = window.Handler as IGtkWindow;
+			if (gtkWindow != null)
+				return gtkWindow.Control;
+			return null;
 		}
 	}
 }
