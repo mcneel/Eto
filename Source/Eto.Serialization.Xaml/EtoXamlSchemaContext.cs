@@ -1,9 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
+using Eto.Drawing;
+#if PORTABLE
+using Portable.Xaml;
+using Portable.Xaml.Markup;
+#else
 using System.Xaml;
 using System.Windows.Markup;
-using System.Linq;
+#endif
 
 namespace Eto.Serialization.Xaml
 {
@@ -41,15 +47,30 @@ namespace Eto.Serialization.Xaml
 						{
 							var assemblyName = nsComponents[1].Substring(clr_assembly.Length);
 							var ns = nsComponents[0].Substring(clr_namespace.Length);
-							var assembly = Assembly.Load(assemblyName);
-							if (assembly != null)
+
+							try
 							{
-								var realType = assembly.GetType(ns + "." + name);
-								if (realType != null)
+								var assembly = Assembly.Load(new AssemblyName(assemblyName));
+								if (assembly != null)
 								{
-									type = xamlNamespace == eto_namespace ? new EtoXamlType(realType, this) : GetXamlType(realType);
+									var realType = assembly.GetType(ns + "." + name);
+									if (realType != null)
+									{
+										type = xamlNamespace == eto_namespace ? new EtoXamlType(realType, this) : GetXamlType(realType);
+										cache.Add(xamlNamespace + name, type);
+									}
+								}
+							}
+							catch
+							{
+								if (DesignMode && xamlNamespace != eto_namespace)
+								{
+									// in design mode, just show a placeholder when we can't load the assembly
+									type = GetXamlType(typeof(DesignerUserControl));
 									cache.Add(xamlNamespace + name, type);
 								}
+								else
+									throw;
 							}
 						}
 					}
@@ -63,7 +84,7 @@ namespace Eto.Serialization.Xaml
 		{
 			// Use EtoXamlType for all types on mono so we can override incorrect behavior when getting collection 
 			// item types in EtoItemType.LookupItemType
-			if (EtoEnvironment.Platform.IsMono || type.Assembly == typeof(Platform).Assembly)
+			if (EtoEnvironment.Platform.IsMono || type.GetTypeInfo().Assembly == typeof(Platform).GetTypeInfo().Assembly)
 			{
 				XamlType xamlType;
 				if (typeCache.TryGetValue(type, out xamlType))

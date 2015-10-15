@@ -5,16 +5,13 @@ using Eto.Drawing;
 namespace Eto.Addin.Shared
 {
 
-	public class ProjectWizardPageView : Panel
+	public class ProjectWizardPageView : BasePageView
 	{
 		public ProjectWizardPageView(ProjectWizardPageModel model)
 		{
-			BackgroundColor = Color.FromArgb(225, 228, 232);
-
 			var content = new TableLayout
 			{
-				Spacing = new Size(10, 10),
-				Padding = new Padding(50, 0, 20, 0)
+				Spacing = new Size(10, 10)
 			};
 			if (model.ShowAppName)
 			{
@@ -90,20 +87,43 @@ namespace Eto.Addin.Shared
 				content.Rows.Add(new TableRow(new Label { Text = model.IsLibrary ? "Type:" : "Shared Code:", TextAlignment = TextAlignment.Right }, sharedCodeList));
 			}
 
-			var information = new Label();
-			information.TextBinding.BindDataContext((ProjectWizardPageModel m) => m.Information);
-
-			Content = new StackLayout
+			if (model.SupportsPanelType)
 			{
-				Orientation = Orientation.Horizontal,
-				VerticalContentAlignment = VerticalAlignment.Stretch,
-				Items =
+				var panelTypeList = new RadioButtonList
 				{
-					new StackLayoutItem(content, VerticalAlignment.Center, expand: true),
-					new Panel { BackgroundColor = Colors.White, Size = new Size(280, 200), Content = information, Padding = new Padding(20) }
-				}
-			};
+					Orientation = Orientation.Horizontal,
+					Spacing = new Size(0, 0),
+				};
 
+				panelTypeList.Items.Add(new ListItem { Text = "Code", Key = "code" });
+				panelTypeList.SelectedKeyBinding.Convert(v => v == "code", v => v ? "code" : panelTypeList.SelectedKey).BindDataContext((ProjectWizardPageModel m) => m.UseCode);
+
+				if (model.SupportsXeto)
+				{
+					panelTypeList.Items.Add(new ListItem { Text = "Xaml", Key = "xaml" });
+					panelTypeList.SelectedKeyBinding.Convert(v => v == "xaml", v => v ? "xaml" : panelTypeList.SelectedKey).BindDataContext((ProjectWizardPageModel m) => m.UseXeto);
+				}
+				if (model.SupportsJeto)
+				{
+					panelTypeList.Items.Add(new ListItem { Text = "Json", Key = "json" });
+					panelTypeList.SelectedKeyBinding.Convert(v => v == "json", v => v ? "json" : panelTypeList.SelectedKey).BindDataContext((ProjectWizardPageModel m) => m.UseJeto);
+				}
+				if (model.SupportsCodePreview)
+				{
+					panelTypeList.Items.Add(new ListItem { Text = "Code Preview", Key = "codePreview" });
+					panelTypeList.SelectedKeyBinding.Convert(v => v == "codePreview", v => v ? "codePreview" : panelTypeList.SelectedKey).BindDataContext((ProjectWizardPageModel m) => m.UseCodePreview);
+				}
+
+				content.Rows.Add(new TableRow(new Label { Text = "Panel:", TextAlignment = TextAlignment.Right }, panelTypeList));
+			}
+
+
+
+			var informationLabel = new Label();
+			informationLabel.TextBinding.BindDataContext((ProjectWizardPageModel m) => m.Information);
+			Information = informationLabel;
+
+			Content = content;
 			DataContext = model;
 		}
 	}

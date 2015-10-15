@@ -665,12 +665,12 @@ namespace Eto.WinForms
 			}
 		}
 
-		public static DrawableCellStates ToEto(this swf.DataGridViewElementStates state)
+		public static CellStates ToEto(this swf.DataGridViewElementStates state)
 		{
 			if (state.HasFlag(swf.DataGridViewElementStates.Selected))
-				return DrawableCellStates.Selected;
+				return CellStates.Selected;
 
-			return DrawableCellStates.None;
+			return CellStates.None;
 		}
 
 		public static PrintSettings ToEto(this sdp.PrinterSettings settings)
@@ -738,6 +738,40 @@ namespace Eto.WinForms
 			if (handler != null)
 				return handler.Win32Window as swf.Form;
 			return null;
+		}
+
+		public static swf.TabAlignment ToSWF(this DockPosition position)
+		{
+			switch (position)
+			{
+				case DockPosition.Top:
+					return swf.TabAlignment.Top;
+				case DockPosition.Left:
+					return swf.TabAlignment.Left;
+				case DockPosition.Right:
+					return swf.TabAlignment.Right;
+				case DockPosition.Bottom:
+					return swf.TabAlignment.Bottom;
+				default:
+					throw new NotSupportedException();
+			}
+		}
+
+		public static DockPosition ToEto(this swf.TabAlignment alignment)
+		{
+			switch (alignment)
+			{
+				case swf.TabAlignment.Top:
+					return DockPosition.Top;
+				case swf.TabAlignment.Bottom:
+					return DockPosition.Bottom;
+				case swf.TabAlignment.Left:
+					return DockPosition.Left;
+				case swf.TabAlignment.Right:
+					return DockPosition.Right;
+				default:
+					throw new NotSupportedException();
+			}
 		}
 	}
 }

@@ -5,6 +5,7 @@ using MonoDevelop.Projects;
 using System.Text;
 using System.Linq;
 using Eto.Addin.Shared;
+using MonoDevelop.Ide;
 
 namespace Eto.Addin.XamarinStudio
 {
@@ -30,7 +31,7 @@ namespace Eto.Addin.XamarinStudio
 		{
 			get
 			{
-				var model = new ProjectWizardPageModel(new ParameterSource(this));
+				var model = new ProjectWizardPageModel(new ParameterSource(this), null);
 				return model.RequiresInput ? 1 : 0;
 			}
 		}
@@ -41,4 +42,3 @@ namespace Eto.Addin.XamarinStudio
 		}
 	}
 }
-

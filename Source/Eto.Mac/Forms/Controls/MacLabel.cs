@@ -49,14 +49,24 @@ namespace Eto.Mac.Forms.Controls
 
 	public class EtoLabelFieldCell : NSTextFieldCell
 	{
-		public VerticalAlignment VerticalAlign { get; set; }
+		public EtoLabelFieldCell()
+		{
+		}
+
+		public EtoLabelFieldCell(IntPtr handle)
+			: base(handle)
+		{
+		}
+
+		[Export("verticalAlignment")]
+		public VerticalAlignment VerticalAlignment { get; set; }
 
 		public override CGRect DrawingRectForBounds(CGRect theRect)
 		{
 			var rect = base.DrawingRectForBounds(theRect);
 			var titleSize = CellSizeForBounds(theRect);
 
-			switch (VerticalAlign)
+			switch (VerticalAlignment)
 			{
 				case VerticalAlignment.Center:
 					rect.Y = (nfloat)Math.Round(theRect.Y + (theRect.Height - titleSize.Height) / 2.0F);
@@ -273,8 +283,8 @@ namespace Eto.Mac.Forms.Controls
 
 		public VerticalAlignment VerticalAlignment
 		{
-			get { return ((EtoLabelFieldCell)Control.Cell).VerticalAlign; }
-			set { ((EtoLabelFieldCell)Control.Cell).VerticalAlign = value; }
+			get { return ((EtoLabelFieldCell)Control.Cell).VerticalAlignment; }
+			set { ((EtoLabelFieldCell)Control.Cell).VerticalAlignment = value; }
 		}
 
 		protected virtual void SetAttributes()
@@ -292,7 +302,10 @@ namespace Eto.Mac.Forms.Controls
 					var attr = new NSMutableDictionary();
 					Widget.Properties.Get<Font>(FontKey).Apply(attr);
 					attr.Add(NSStringAttributeKey.ParagraphStyle, paragraphStyle);
-					attr.Add(NSStringAttributeKey.ForegroundColor, CurrentColor);
+					var col = Widget.Properties.Get<Color?>(TextColorKey);
+					if (col != null)
+						attr.Add(NSStringAttributeKey.ForegroundColor, col.Value.ToNSUI());
+					//attr.Add(NSStringAttributeKey.ForegroundColor, CurrentColor);
 					str.SetAttributes(attr, range);
 					if (underlineIndex >= 0)
 					{

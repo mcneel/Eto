@@ -115,32 +115,37 @@ namespace Eto.Mac.Forms
 
 		public virtual NSView FocusControl { get { return EventControl; } }
 
-		static readonly object AutoSizeKey = new object();
+		static readonly object AutoSize_Key = new object();
 		public virtual bool AutoSize
 		{
-			get { return Widget.Properties.Get<bool?>(AutoSizeKey) ?? true; }
-			protected set { Widget.Properties[AutoSizeKey] = value; }
+			get { return Widget.Properties.Get<bool?>(AutoSize_Key) ?? true; }
+			protected set { Widget.Properties[AutoSize_Key] = value; }
 		}
 
-		static readonly object MinimumSizeKey = new object();
+		protected virtual Size DefaultMinimumSize
+		{
+			get { return Size.Empty; }
+		}
+
+		static readonly object MinimumSize_Key = new object();
 		public virtual Size MinimumSize
 		{
-			get { return Widget.Properties.Get<Size?>(MinimumSizeKey) ?? Size.Empty; }
-			set { Widget.Properties[MinimumSizeKey] = value; }
+			get { return Widget.Properties.Get<Size?>(MinimumSize_Key) ?? DefaultMinimumSize; }
+			set { Widget.Properties[MinimumSize_Key] = value; NaturalSize = null; }
 		}
 
-		static readonly object MaximumSizeKey = new object();
+		static readonly object MaximumSize_Key = new object();
 		public virtual SizeF MaximumSize
 		{
-			get { return Widget.Properties.Get<SizeF?>(MaximumSizeKey) ?? SizeF.MaxValue; }
-			set { Widget.Properties[MaximumSizeKey] = value; }
+			get { return Widget.Properties.Get<SizeF?>(MaximumSize_Key) ?? SizeF.MaxValue; }
+			set { Widget.Properties[MaximumSize_Key] = value; }
 		}
 
-		static readonly object PreferredSizeKey = new object();
+		static readonly object PreferredSize_Key = new object();
 		public Size? PreferredSize
 		{
-			get { return Widget.Properties.Get<Size?>(PreferredSizeKey); }
-			set { Widget.Properties[PreferredSizeKey] = value; }
+			get { return Widget.Properties.Get<Size?>(PreferredSize_Key); }
+			set { Widget.Properties[PreferredSize_Key] = value; }
 		}
 
 		public virtual Size Size
@@ -173,11 +178,11 @@ namespace Eto.Mac.Forms
 			}
 		}
 
-		static readonly object NaturalSizeKey = new object();
+		static readonly object NaturalSize_Key = new object();
 		protected SizeF? NaturalSize
 		{
-			get { return Widget.Properties.Get<SizeF?>(NaturalSizeKey); }
-			set { Widget.Properties[NaturalSizeKey] = value; }
+			get { return Widget.Properties.Get<SizeF?>(NaturalSize_Key); }
+			set { Widget.Properties[NaturalSize_Key] = value; }
 		}
 
 		public virtual NSObject CustomFieldEditor { get { return null; } }
@@ -289,7 +294,7 @@ namespace Eto.Mac.Forms
 					AddMethod(selRightMouseDragged, new Action<IntPtr, IntPtr, IntPtr>(TriggerMouseDragged), "v@:@");
 					break;
 				case Eto.Forms.Control.SizeChangedEvent:
-					AddMethod(selSetFrameSize, new Action<IntPtr, IntPtr, CGSize>(SetFrameSizeAction), "v@:{CGSize=ff}", ContainerControl);
+					AddMethod(selSetFrameSize, new Action<IntPtr, IntPtr, CGSize>(SetFrameSizeAction), EtoEnvironment.Is64BitProcess ? "v@:{CGSize=dd}" : "v@:{CGSize=ff}", ContainerControl);
 					break;
 				case Eto.Forms.Control.MouseDownEvent:
 					AddMethod(selMouseDown, new Action<IntPtr, IntPtr, IntPtr>(TriggerMouseDown), "v@:@");
@@ -436,6 +441,28 @@ namespace Eto.Mac.Forms
 				}
 			}
 		}
+
+		/// <summary>
+		/// Triggers a mouse callback from a different event. 
+		/// e.g. when an NSButton is clicked it is triggered from a mouse up event.
+		/// </summary>
+		protected void TriggerMouseCallback()
+		{
+			// trigger mouse up event since it's buried by cocoa
+			var evt = NSApplication.SharedApplication.CurrentEvent;
+			if (evt == null)
+				return;
+			if (evt.Type == NSEventType.LeftMouseUp || evt.Type == NSEventType.RightMouseUp || evt.Type == NSEventType.OtherMouseUp)
+			{
+				Callback.OnMouseUp(Widget, MacConversions.GetMouseEvent(ContainerControl, evt, false));
+			}
+			if (evt.Type == NSEventType.LeftMouseDragged || evt.Type == NSEventType.RightMouseDragged || evt.Type == NSEventType.OtherMouseDragged)
+			{
+				Callback.OnMouseMove(Widget, MacConversions.GetMouseEvent(ContainerControl, evt, false));
+			}
+		}
+
+
 
 		static void TriggerMouseUp(IntPtr sender, IntPtr sel, IntPtr e)
 		{
@@ -614,15 +641,15 @@ namespace Eto.Mac.Forms
 			get { return Cursor; }
 		}
 
-		static readonly object CursorKey = new object();
+		static readonly object Cursor_Key = new object();
 
 		public virtual Cursor Cursor
 		{
-			get { return Widget.Properties.Get<Cursor>(CursorKey); }
+			get { return Widget.Properties.Get<Cursor>(Cursor_Key); }
 			set {
 				if (Cursor != value)
 				{
-					Widget.Properties[CursorKey] = value;
+					Widget.Properties[Cursor_Key] = value;
 					AddMethod(selResetCursorRects, new Action<IntPtr, IntPtr>(TriggerResetCursorRects), "v@:");
 				}
 			}
@@ -658,7 +685,9 @@ namespace Eto.Mac.Forms
 				FocusControl.Window.MakeFirstResponder(FocusControl);
 				InitialFocus = false;
 			}
-			SetBackgroundColor(Widget.Properties.Get<Color?>(BackgroundColorKey));
+			var bg = Widget.Properties.Get<Color?>(BackgroundColorKey);
+			if (bg != null)
+				SetBackgroundColor(bg);
 		}
 
 		public virtual void OnUnLoad(EventArgs e)

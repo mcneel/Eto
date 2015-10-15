@@ -24,13 +24,13 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>..\..\..\BuildOutput\net40\Debug</OutputPath>
-    <DefineConstants>DEBUG;DESKTOP;XAML</DefineConstants>
+    <DefineConstants>DEBUG;DESKTOP;XAML;NET40</DefineConstants>
     <Optimize>false</Optimize>
     <DebugType>full</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <OutputPath>..\..\..\BuildOutput\net40\Release</OutputPath>
-    <DefineConstants>DESKTOP;XAML</DefineConstants>
+    <DefineConstants>DESKTOP;XAML;NET40</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
   </PropertyGroup>
@@ -187,6 +187,10 @@
     <Compile Include="..\..\Eto\Helper.cs">
       <Link>Helper.cs</Link>
     </Compile>
+    <Compile Include="Sections\Behaviors\CursorSection.cs" />
+    <Compile Include="Sections\Controls\ExpanderSection.cs" />
+    <Compile Include="Sections\Controls\PropertyCellSection.cs" />
+    <Compile Include="Sections\Drawing\SystemColorSection.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Eto.Serialization.Json\Eto.Serialization.Json.csproj">
