@@ -68,7 +68,7 @@ namespace Eto.Forms
 		{
 			base.OnDataContextChanged(e);
 
-			if (Handler.RecurseToChildren)
+            if (Handler != null && Handler.RecurseToChildren)
 			{
 				foreach (var control in Controls)
 				{
@@ -85,7 +85,7 @@ namespace Eto.Forms
 		{
 			base.OnPreLoad(e);
 
-			if (Handler.RecurseToChildren)
+            if (Handler != null && Handler.RecurseToChildren)
 			{
 				foreach (Control control in Controls)
 				{
@@ -100,7 +100,7 @@ namespace Eto.Forms
 		/// <param name="e">Event arguments</param>
 		protected override void OnLoad(EventArgs e)
 		{
-			if (Handler.RecurseToChildren)
+            if (Handler != null && Handler.RecurseToChildren)
 			{
 				foreach (Control control in Controls)
 				{
@@ -119,7 +119,7 @@ namespace Eto.Forms
 		{
 			base.OnLoadComplete(e);
 
-			if (Handler.RecurseToChildren)
+            if (Handler != null && Handler.RecurseToChildren)
 			{
 				foreach (Control control in Controls)
 				{
@@ -167,7 +167,7 @@ namespace Eto.Forms
 		public override void Unbind()
 		{
 			base.Unbind();
-			if (Handler.RecurseToChildren)
+            if (Handler != null && Handler.RecurseToChildren)
 			{
 				foreach (var control in Controls)
 				{
@@ -182,7 +182,7 @@ namespace Eto.Forms
 		public override void UpdateBindings(BindingUpdateMode mode = BindingUpdateMode.Source)
 		{
 			base.UpdateBindings(mode);
-			if (Handler.RecurseToChildren)
+            if (Handler != null && Handler.RecurseToChildren)
 			{
 				foreach (var control in Controls)
 				{
