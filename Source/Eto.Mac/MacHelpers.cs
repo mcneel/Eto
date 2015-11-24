@@ -4,13 +4,15 @@ using Eto.Mac;
 using Eto.Mac.Forms;
 using Eto.Mac.Forms.Controls;
 using Eto.Drawing;
-using MonoMac.Foundation;
-using MonoMac.ObjCRuntime;
 
 #if XAMMAC2
 using AppKit;
+using Foundation;
+using ObjCRuntime;
 #else
 using MonoMac.AppKit;
+using MonoMac.Foundation;
+using MonoMac.ObjCRuntime;
 #endif
 
 namespace Eto.Forms
@@ -79,7 +81,7 @@ namespace Eto.Forms
 		/// <param name="window">Cocoa Window to wrap.</param>
 		public static Window ToEtoWindow(this NSWindow window)
 		{
-			return new Form(new FormHandler(window));
+			return new Form(new NativeFormHandler(window));
 		}
 
 		/// <summary>
@@ -89,7 +91,7 @@ namespace Eto.Forms
 		/// <param name="windowController">Cocoa Window to wrap.</param>
 		public static Window ToEtoWindow(this NSWindowController windowController)
 		{
-			return new Form(new FormHandler(windowController));
+			return new Form(new NativeFormHandler(windowController));
 		}
 
 		/// <summary>

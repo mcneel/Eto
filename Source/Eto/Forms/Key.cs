@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace Eto.Forms
 {
@@ -10,6 +11,7 @@ namespace Eto.Forms
 	/// </summary>
 	[Flags]
 	[TypeConverter(typeof(KeysConverter))]
+	[DebuggerDisplay("{ToString()}")] // fix VS 2013 debug display (VS 2015 is fine).
 	public enum Keys
 	{
 		/// <summary>No key</summary>
@@ -254,6 +256,11 @@ namespace Eto.Forms
 		public static string ToShortcutString(this Keys key, string separator = "+")
 		{
 			var sb = new StringBuilder();
+			if (key.HasFlag(Keys.Application))
+				AppendSeparator(sb, separator, 
+					EtoEnvironment.Platform.IsMac ? "\x2318" : 
+					EtoEnvironment.Platform.IsWindows ? "Win" :
+					"App");
 			if (key.HasFlag(Keys.Control))
 				AppendSeparator(sb, separator, "Ctrl");
 			if (key.HasFlag(Keys.Shift))
