@@ -166,7 +166,7 @@ namespace Eto.WinForms.Forms
 		}
 		Size? contentSize;
 
-		protected override void SetContent(swf.Control contentControl)
+		protected override void SetContent(Control control, swf.Control contentControl)
 		{
 			contentControl.Dock = swf.DockStyle.Fill;
 			ContainerContentControl.Controls.Add(contentControl);
@@ -476,6 +476,14 @@ namespace Eto.WinForms.Forms
 					if (Widget.Loaded && value)
 						Callback.OnShown(Widget, EventArgs.Empty);
 				}
+			}
+		}
+
+		public float LogicalPixelSize
+		{
+			get
+			{
+				return 1f;
 			}
 		}
 	}
