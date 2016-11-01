@@ -1,4 +1,5 @@
 ﻿using Eto.Drawing;
+using Eto.Forms;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -9,12 +10,12 @@ using System.Threading.Tasks;
 namespace Eto.Test.UnitTests.Drawing
 {
 	[TestFixture]
-	public class BitmapTests
+	public class BitmapTests : TestBase
 	{
 		public BitmapTests()
 		{
 			// initialize test generator if running through IDE or nunit-gui
-			TestUtils.Initialize();
+			TestBase.Initialize();
 		}
 
 		[Test]
@@ -61,6 +62,96 @@ namespace Eto.Test.UnitTests.Drawing
 			ValidateImages(image, clone, rect);
 		}
 
+		[TestCase(1.0f, 0.0f, 0.0f)]
+		[TestCase(0.0f, 1.0f, 0.0f)]
+		[TestCase(0.0f, 0.0f, 1.0f)]
+		[TestCase(0.0f, 1.0f, 1.0f)]
+		[TestCase(1.0f, 0.0f, 1.0f)]
+		[TestCase(1.0f, 1.0f, 0.0f)]
+		public void TestGetPixelWithLock24bit(float red, float green, float blue)
+		{
+			var colorSet = new Color(red, green, blue);
+
+			var image = new Bitmap(new Size(1, 1), PixelFormat.Format24bppRgb);
+			image.SetPixel(0, 0, colorSet);
+
+			using (var data = image.Lock())
+			{
+				var colorGet = data.GetPixel(0, 0);
+
+				if (colorSet != colorGet)
+				{
+					Assert.Fail("Pixels are not the same (SetPixel: {0}, GetPixel: {1})", colorSet, colorGet);
+				}
+			}
+		}
+
+		[TestCase(1.0f, 0.0f, 0.0f)]
+		[TestCase(0.0f, 1.0f, 0.0f)]
+		[TestCase(0.0f, 0.0f, 1.0f)]
+		[TestCase(0.0f, 1.0f, 1.0f)]
+		[TestCase(1.0f, 0.0f, 1.0f)]
+		[TestCase(1.0f, 1.0f, 0.0f)]
+		public void TestGetPixelWithoutLock24bit(float red, float green, float blue)
+		{
+			var colorSet = new Color(red, green, blue);
+
+			var image = new Bitmap(new Size(1, 1), PixelFormat.Format24bppRgb);
+			image.SetPixel(0, 0, colorSet);
+
+			var colorGet = image.GetPixel(0, 0);
+
+			if (colorSet != colorGet)
+			{
+				Assert.Fail("Pixels are not the same (SetPixel: {0}, GetPixel: {1})", colorSet, colorGet);
+			}
+		}
+
+		[TestCase(1.0f, 0.0f, 0.0f, 1.0f)]
+		[TestCase(0.0f, 1.0f, 0.0f, 0.5f)]
+		[TestCase(0.0f, 0.0f, 1.0f, 0.0f)]
+		[TestCase(0.0f, 1.0f, 1.0f, 1.0f)]
+		[TestCase(1.0f, 0.0f, 1.0f, 0.5f)]
+		[TestCase(1.0f, 1.0f, 0.0f, 0.0f)]
+		public void TestGetPixelWithLock32bit(float red, float green, float blue, float alpha)
+		{
+			var colorSet = new Color(red, green, blue, alpha);
+
+			var image = new Bitmap(new Size(1, 1), PixelFormat.Format32bppRgba);
+			image.SetPixel(0, 0, colorSet);
+
+			using (var data = image.Lock())
+			{
+				var colorGet = data.GetPixel(0, 0);
+
+				if (colorSet != colorGet)
+				{
+					Assert.Fail("Pixels are not the same (SetPixel: {0}, GetPixel: {1})", colorSet, colorGet);
+				}
+			}
+		}
+
+		[TestCase(1.0f, 0.0f, 0.0f, 1.0f)]
+		[TestCase(0.0f, 1.0f, 0.0f, 0.5f)]
+		[TestCase(0.0f, 0.0f, 1.0f, 0.0f)]
+		[TestCase(0.0f, 1.0f, 1.0f, 1.0f)]
+		[TestCase(1.0f, 0.0f, 1.0f, 0.5f)]
+		[TestCase(1.0f, 1.0f, 0.0f, 0.0f)]
+		public void TestGetPixelWithoutLock32bit(float red, float green, float blue, float alpha)
+		{
+			var colorSet = new Color(red, green, blue, alpha);
+
+			var image = new Bitmap(new Size(1, 1), PixelFormat.Format32bppRgba);
+			image.SetPixel(0, 0, colorSet);
+
+			var colorGet = image.GetPixel(0, 0);
+
+			if (colorSet != colorGet)
+			{
+				Assert.Fail("Pixels are not the same (SetPixel: {0}, GetPixel: {1})", colorSet, colorGet);
+			}
+		}
+
 		static void ValidateImages(Bitmap image, Bitmap clone, Rectangle? rect = null)
 		{
 			var testRect = rect ?? new Rectangle(image.Size);
@@ -104,5 +195,94 @@ namespace Eto.Test.UnitTests.Drawing
 						}
 			}
 		}
+
+		[Test]
+		public void BitmapFromBackgroundThreadShouldBeUsable()
+		{
+			// we are running tests in a background thread already, just generate it there.
+			var bmp = new Bitmap(100, 100, PixelFormat.Format32bppRgba);
+			using (var g = new Graphics(bmp))
+			{
+				g.DrawLine(Colors.Blue, 0, 0, 100, 100);
+			}
+
+			// test showing it on a form
+			Shown(f => new ImageView { Image = bmp });
+		}
+
+		[Test]
+		public void BitmapShouldBeEditableFromUIThread()
+		{
+			// we are running tests in a background thread already, just generate it there.
+			var bmp = new Bitmap(100, 100, PixelFormat.Format32bppRgba);
+			// test showing it on a form
+			Shown(
+				f => {
+					using (var g = new Graphics(bmp))
+					{
+						g.DrawLine(Colors.Blue, 0, 0, 100, 100);
+					}
+
+					return new ImageView { Image = bmp };
+				});
+		}
+
+		[Test]
+		public async Task BitmapShouldAllowMultipleThreads()
+		{
+			var bmp = new Bitmap(30, 30, PixelFormat.Format32bppRgba);
+			await Task.Run(() =>
+			{
+				using (var g = new Graphics(bmp))
+				{
+					g.FillRectangle(Colors.Blue, 0, 0, 10, 10);
+				}
+			});
+			await Task.Run(() =>
+			{
+				using (var g = new Graphics(bmp))
+				{
+					g.FillRectangle(Colors.Green, 10, 0, 10, 10);
+				}
+			});
+
+			await Task.Run(() =>
+			{
+				using (var bd = bmp.Lock())
+				{
+					for (int y = 0; y < 10; y++)
+						for (int x = 20; x < 30; x++)
+							bd.SetPixel(x, y, Colors.Red);
+				}
+			});
+
+			// test output in test thread
+			Assert.AreEqual(Colors.Blue, bmp.GetPixel(0, 0));
+			Assert.AreEqual(Colors.Green, bmp.GetPixel(10, 0));
+			Assert.AreEqual(Colors.Red, bmp.GetPixel(20, 0));
+
+			using (var bd = bmp.Lock())
+			{
+				Assert.AreEqual(Colors.Blue, bd.GetPixel(0, 0));
+				Assert.AreEqual(Colors.Green, bd.GetPixel(10, 0));
+				Assert.AreEqual(Colors.Red, bd.GetPixel(20, 0));
+			}
+			Shown(f => new ImageView { Image = bmp }, 
+				iv => {
+
+				// also test in UI thread
+				Assert.AreEqual(Colors.Blue, bmp.GetPixel(0, 0));
+				Assert.AreEqual(Colors.Green, bmp.GetPixel(10, 0));
+				Assert.AreEqual(Colors.Red, bmp.GetPixel(20, 0));
+
+				using (var bd = bmp.Lock())
+				{
+					Assert.AreEqual(Colors.Blue, bd.GetPixel(0, 0));
+					Assert.AreEqual(Colors.Green, bd.GetPixel(10, 0));
+					Assert.AreEqual(Colors.Red, bd.GetPixel(20, 0));
+				}
+			});
+		}
+
 	}
 }

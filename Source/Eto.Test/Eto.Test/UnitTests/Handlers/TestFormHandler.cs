@@ -19,5 +19,9 @@ namespace Eto.Test.UnitTests.Handlers
 			Callback.OnShown(Widget, EventArgs.Empty);
 			OnShown();
 		}
+
+		public bool ShowActivated { get; set; }
+
+		public bool CanFocus { get; set; }
 	}
 }

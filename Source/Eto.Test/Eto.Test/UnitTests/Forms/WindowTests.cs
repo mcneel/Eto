@@ -10,12 +10,12 @@ using Eto.Drawing;
 namespace Eto.Test.UnitTests.Forms
 {
 	[TestFixture]
-	public class WindowTests
+	public class WindowTests : TestBase
 	{
 		[Test]
 		public void WindowShouldReportInitialSize()
 		{
-			TestUtils.Form(form =>
+			TestBase.Form(form =>
 			{
 				Size? size = null;
 				form.Content = new Panel { Size = new Size(300, 300) };
@@ -28,6 +28,16 @@ namespace Eto.Test.UnitTests.Forms
 					form.Close();
 				};
 			});
+		}
+
+		[Test]
+		public void DefaultFormValuesShouldBeCorrect()
+		{
+			TestProperties(f => f,
+				f => f.CanFocus,
+				f => f.ShowActivated,
+				f => f.Enabled
+			);
 		}
 	}
 }

@@ -4,13 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using Eto.Drawing;
 using sd = System.Drawing;
+using swf = System.Windows.Forms;
 
 #if WPF
 using swi = System.Windows.Interop;
 
 namespace Eto.Wpf.Forms
 #elif WINFORMS
-using swf = System.Windows.Forms;
 
 namespace Eto.WinForms.Forms
 #endif
@@ -88,14 +88,10 @@ namespace Eto.WinForms.Forms
 			{
 				if (Win32.PerMonitorDpiSupported)
 					return Win32.GetWindowDpi(Control) / 96.0f;
-				var screen = System.Windows.Forms.Screen.FromHandle(Control);
+				var screen = swf.Screen.FromHandle(Control);
 				if (screen == null)
 					return 1;
-				using (var form = new System.Windows.Forms.Form { Bounds = screen.Bounds })
-				using (var graphics = form.CreateGraphics())
-				{
-					return graphics.DpiY / 96.0f;
-				}
+				return screen.GetDpi() / 96f;
 			}
 		}
 
@@ -480,6 +476,32 @@ namespace Eto.WinForms.Forms
 			{
 				throw new NotImplementedException();
 			}
+			set
+			{
+				throw new NotImplementedException();
+			}
+		}
+
+		public bool ShowActivated
+		{
+			get
+			{
+				throw new NotImplementedException();
+			}
+
+			set
+			{
+				throw new NotImplementedException();
+			}
+		}
+
+		public bool CanFocus
+		{
+			get
+			{
+				throw new NotImplementedException();
+			}
+
 			set
 			{
 				throw new NotImplementedException();

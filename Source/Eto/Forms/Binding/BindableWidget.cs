@@ -65,11 +65,11 @@ namespace Eto.Forms
 		{
 			get { return Properties.Get<Widget>(Parent_Key); }
 			internal set
-			{ 
+			{
 				Properties.Set(Parent_Key, value, () =>
 				{
-					if (!Properties.ContainsKey(DataContext_Key))
-						TriggerDataContextChanged(EventArgs.Empty);
+					if (!HasDataContext && !ReferenceEquals(DataContext, null))
+						TriggerDataContextChanged();
 				});
 			}
 		}
@@ -169,6 +169,8 @@ namespace Eto.Forms
 			set { Properties.Set(DataContext_Key, value, () => OnDataContextChanged(EventArgs.Empty)); }
 		}
 
+		internal bool HasDataContext => Properties.ContainsKey(DataContext_Key);
+
 		static readonly  object Bindings_Key = new object();
 
 		/// <summary>
@@ -179,13 +181,12 @@ namespace Eto.Forms
 			get { return Properties.Create(Bindings_Key, () => new BindingCollection()); }
 		}
 
-#endregion
+		#endregion
 
-		internal void TriggerDataContextChanged(EventArgs e)
+		internal void TriggerDataContextChanged()
 		{
-			if (!Properties.ContainsKey(DataContext_Key))
-				using (Platform.Context)
-					OnDataContextChanged(e);
+			if (!HasDataContext)
+				OnDataContextChanged(EventArgs.Empty);
 		}
 
 		/// <summary>

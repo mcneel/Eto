@@ -11,20 +11,42 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using System.IO;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.ComponentModel;
 
 namespace Eto.Test.UnitTests
 {
+	/// <summary>
+	/// Manual test category
+	/// </summary>
+	public class ManualTestAttribute : NUnit.Framework.CategoryAttribute
+	{
+		public ManualTestAttribute()
+			: base(TestBase.ManualTestCategory)
+		{
+		}
+	}
+
 	/// <summary>
 	/// Unit test utilities
 	/// </summary>
 	/// <copyright>(c) 2014 by Curtis Wensley</copyright>
 	/// <license type="BSD-3">See LICENSE for full terms</license>
-	public static class TestUtils
+	public class TestBase
 	{
 		/// <summary>
 		/// Category to exclude when using the Test platform, and only run when on a "real" platform.
 		/// </summary>
 		public const string TestPlatformCategory = "TestPlatform";
+
+		/// <summary>
+		/// Category for tests that require user input to perform the test
+		/// </summary>
+		/// <remarks>
+		/// This is useful to test behaviour of controls when actually in use, not just programmatically.
+		/// </remarks>
+		public const string ManualTestCategory = "ManualTest";
 
 		/// <summary>
 		/// Default timeout for form operations
@@ -48,13 +70,13 @@ namespace Eto.Test.UnitTests
 				try
 				{
 					// use config file to specify which generator to use for testing
-					#if PCL
+#if PCL
 					var doc = System.Xml.Linq.XDocument.Load("Eto.Test.dll.config");
 					var setting = doc != null ? doc.Root.Element("appSettings").Elements("add").FirstOrDefault(r => r.Attribute("key").Value == "generator") : null;
 					var generatorTypeName = setting != null ? setting.Attribute("value").Value : null;
-					#else
+#else
 					var generatorTypeName = System.Configuration.ConfigurationManager.AppSettings["generator"];
-					#endif
+#endif
 					if (!string.IsNullOrEmpty(generatorTypeName))
 						platform = Platform.Get(generatorTypeName);
 				}
@@ -135,6 +157,7 @@ namespace Eto.Test.UnitTests
 				application.AsyncInvoke(run);
 			else
 				run();
+
 			if (!ev.WaitOne(timeout))
 			{
 				Assert.Fail("Test did not complete in time");
@@ -196,6 +219,22 @@ namespace Eto.Test.UnitTests
 			}
 		}
 
+		public static void Shown(Action<Form> init, Action test, bool replay = false, int timeout = DefaultTimeout)
+		{
+			Shown(form =>
+				{
+					init(form);
+					return null;
+				},
+				(Control c) =>
+				{
+					test();
+				},
+				replay,
+				timeout
+			);
+		}
+
 		/// <summary>
 		/// Test operations on a form once it is shown
 		/// </summary>
@@ -203,7 +242,7 @@ namespace Eto.Test.UnitTests
 		/// <param name="test">Delegate to execute on the form when shown</param>
 		/// <param name="replay">Replay the init and test again after shown</param>
 		/// <param name="timeout">Timeout to wait for the operation to complete</param>
-		public static void Shown<T>(Func<Form, T> init, Action<T> test, bool replay = false, int timeout = DefaultTimeout)
+		public static void Shown<T>(Func<Form, T> init, Action<T> test = null, bool replay = false, int timeout = DefaultTimeout)
 			where T : Control
 		{
 			var application = Application;
@@ -215,15 +254,18 @@ namespace Eto.Test.UnitTests
 				{
 					try
 					{
-						test(control);
-						if (replay)
+						if (test != null)
 						{
-							form.Content = null;
-							control = init(form);
-							if (control != null && form.Content == null)
-								form.Content = control;
-							if (application == null)
-								test(control);
+							test(control);
+							if (replay)
+							{
+								form.Content = null;
+								control = init(form);
+								if (control != null && form.Content == null && control != form)
+									form.Content = control;
+								if (application == null)
+									test(control);
+							}
 						}
 					}
 					catch (Exception ex)
@@ -256,7 +298,7 @@ namespace Eto.Test.UnitTests
 						}
 					}
 				};
-				if (control != null && form.Content == null)
+				if (control != null && form.Content == null && control != form)
 					form.Content = control;
 			}, timeout);
 			if (exception != null)
@@ -310,6 +352,63 @@ namespace Eto.Test.UnitTests
 			var tcs = new TaskCompletionSource<TEventArgs>();
 			hookEvent((sender, e) => tcs.SetResult(e));
 			return tcs.Task;
+		}
+
+		public static PropertyTestInfo PropertyTest<T>(Func<T> create, params Expression<Func<T, object>>[] param)
+		{
+			return new PropertyTestInfo
+			{
+				Type = typeof(T),
+				Create = () => create(),
+				Properties = param.Select(r => r.GetMemberInfo().Member.Name).ToList()
+			};
+		}
+
+		public static PropertyTestInfo PropertyTest<T>(params Expression<Func<T, object>>[] param)
+			where T: new()
+		{
+			return new PropertyTestInfo
+			{
+				Type = typeof(T),
+				Create = () => new T(),
+				Properties = param.Select(r => r.GetMemberInfo().Member.Name).ToList()
+			};
+		}
+
+		public static void TestProperties<T>(Func<Form, T> create, params Expression<Func<T, object>>[] properties)
+		{
+			PropertyTestInfo test = null;
+			Shown(form => {
+				var ctl = create(form);
+				test = PropertyTest<T>(() => ctl, properties);
+				test.Run();
+				return ctl as Control;
+			}, ctl => test.Run());
+		}
+
+		public class PropertyTestInfo
+		{
+			public Type Type { get; set; }
+			public Func<object> Create { get; set; }
+			public List<string> Properties { get; set; }
+
+			public void Run()
+			{
+				var obj = Create != null ? Create() : Activator.CreateInstance(Type);
+				foreach (var propertyName in Properties)
+				{
+					var propertyInfo = obj.GetType().GetRuntimeProperty(propertyName);
+					var defValAttr = propertyInfo.GetCustomAttribute<DefaultValueAttribute>();
+					var defaultValue = defValAttr != null ? defValAttr.Value : propertyInfo.PropertyType.GetTypeInfo().IsValueType ? Activator.CreateInstance(propertyInfo.PropertyType) : null;
+					var val = propertyInfo.GetValue(obj);
+					Assert.AreEqual(defaultValue, val, string.Format("Property '{0}' of type '{1}' is expected to be '{2}'", propertyName, Type.Name, defaultValue));
+				}
+			}
+
+			public override string ToString()
+			{
+				return $"{Type}: {string.Join(",", Properties)}";
+			}
 		}
 	}
 }

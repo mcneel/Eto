@@ -151,7 +151,6 @@
     <Compile Include="UnitTests\Handlers\Drawing\TestGraphicsHandler.cs" />
     <Compile Include="UnitTests\Handlers\Drawing\TestMatrixHandler.cs" />
     <Compile Include="MainForm.cs" />
-    <Compile Include="UnitTests\TestUtils.cs" />
     <Compile Include="UnitTests\Handlers\TestPlatform.cs" />
     <Compile Include="Sections\Controls\ColorPickerSection.cs" />
     <Compile Include="UnitTests\Forms\FilterCollectionTests.cs" />
@@ -198,6 +197,8 @@
     <Compile Include="TestIcons.cs" />
     <Compile Include="Sections\Drawing\IconFrameSection.cs" />
     <Compile Include="UnitTests\Drawing\IconTests.cs" />
+    <Compile Include="UnitTests\TestBase.cs" />
+    <Compile Include="UnitTests\Forms\DataContextTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Sections\Serialization\Json\Test.json">
@@ -249,10 +250,10 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="nunit.framework">
-      <HintPath>..\..\packages\NUnit.3.0.0\lib\portable-net45+win8+wp8+wpa81+Xamarin.Mac+MonoAndroid10+MonoTouch10+Xamarin.iOS10\nunit.framework.dll</HintPath>
+      <HintPath>..\..\packages\NUnit.3.4.1\lib\portable-net45+win8+wp8+wpa81+Xamarin.Mac+MonoAndroid10+MonoTouch10+Xamarin.iOS10\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="Portable.Xaml">
-      <HintPath>..\..\packages\Portable.Xaml.0.11.0\lib\portable-net45+win+wpa81+wp80+MonoAndroid10+xamarinios10+MonoTouch10\Portable.Xaml.dll</HintPath>
+      <HintPath>..\..\packages\Portable.Xaml.0.14.0\lib\portable-net45+win+wpa81+wp80+MonoAndroid10+xamarinios10+MonoTouch10\Portable.Xaml.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="..\..\Shared\Common.targets" />

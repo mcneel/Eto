@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 
 namespace Eto.Forms
 {
@@ -28,6 +29,36 @@ namespace Eto.Forms
 		}
 
 		/// <summary>
+		/// Gets or sets a value indicating that the form should be activated when initially shown.
+		/// </summary>
+		/// <remarks>
+		/// When <c>true</c>, the form will become the active/focussed window when the <see cref="Show"/> method is called.
+		/// When <c>false</c>, the form will show but will not get focus until the user clicks on the form.
+		/// </remarks>
+		/// <seealso cref="CanFocus"/>
+		[DefaultValue(true)]
+		public bool ShowActivated
+		{
+			get { return Handler.ShowActivated; }
+			set { Handler.ShowActivated = value; }
+		}
+
+		/// <summary>
+		/// Gets or sets a value indicating that this form can get keyboard/input focus when the user clicks on it or any child control.
+		/// </summary>
+		/// <remarks>
+		/// This is useful for windows that provide interaction but do not steal focus from the current window, such as a tooltip, popover, etc.
+		/// </remarks>
+		/// <value><c>true</c> if the form can get focus; otherwise, <c>false</c>.</value>
+		/// <seealso cref="ShowActivated"/>
+		[DefaultValue(true)]
+		public bool CanFocus
+		{
+			get { return Handler.CanFocus; }
+			set { Handler.CanFocus = value; }
+		}
+
+		/// <summary>
 		/// Show the form
 		/// </summary>
 		public void Show()
@@ -37,7 +68,6 @@ namespace Eto.Forms
 			{
 				OnPreLoad(EventArgs.Empty);
 				OnLoad(EventArgs.Empty);
-				OnDataContextChanged(EventArgs.Empty);
 				OnLoadComplete(EventArgs.Empty);
 			}
 
@@ -54,6 +84,26 @@ namespace Eto.Forms
 			/// Show the form
 			/// </summary>
 			void Show();
+
+			/// <summary>
+			/// Gets or sets a value indicating that the form should be activated when initially shown.
+			/// </summary>
+			/// <remarks>
+			/// When <c>true</c>, the form will become the active/focussed window when the <see cref="Show"/> method is called.
+			/// When <c>false</c>, the form will show but will not get focus until the user clicks on the form.
+			/// </remarks>
+			/// <seealso cref="CanFocus"/>
+			bool ShowActivated { get; set; }
+
+			/// <summary>
+			/// Gets or sets a value indicating that this form can get keyboard/input focus when the user clicks on it or any child control.
+			/// </summary>
+			/// <remarks>
+			/// This is useful for windows that provide interaction but do not steal focus from the current window, such as a tooltip, popover, etc.
+			/// </remarks>
+			/// <value><c>true</c> if the form can get focus; otherwise, <c>false</c>.</value>
+			/// <seealso cref="ShowActivated"/>
+			bool CanFocus { get; set; }
 		}
 	}
 }

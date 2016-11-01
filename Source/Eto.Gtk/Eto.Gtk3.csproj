@@ -21,7 +21,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>..\..\BuildOutput\net40\Release\</OutputPath>
-    <DefineConstants>CAIRO;TRACE;GTK3</DefineConstants>
+    <DefineConstants>CAIRO;TRACE;GTK3;NET40</DefineConstants>
     <BaseAddress>285212672</BaseAddress>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
@@ -35,7 +35,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>..\..\BuildOutput\net40\Debug\</OutputPath>
-    <DefineConstants>CAIRO;DEBUG;TRACE;GTK3</DefineConstants>
+    <DefineConstants>CAIRO;DEBUG;TRACE;GTK3;NET40</DefineConstants>
     <BaseAddress>285212672</BaseAddress>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FileAlignment>4096</FileAlignment>
@@ -80,8 +80,8 @@
       <HintPath>..\..\Libraries\GtkSharp3\pango-sharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="webkit-sharp, Version=1.10.0.0, Culture=neutral, PublicKeyToken=9e12f6cf0aa7e2fa">
-      <HintPath>..\..\Libraries\GtkSharp3\webkit-sharp.dll</HintPath>
+    <Reference Include="webkitgtk-sharp, Version=2.0.0.0, Culture=neutral, PublicKeyToken=e1f0fd21e79c8b0f">
+      <HintPath>..\..\Libraries\GtkSharp3\webkitgtk-sharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

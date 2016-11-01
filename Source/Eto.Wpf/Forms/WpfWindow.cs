@@ -9,6 +9,8 @@ using swi = System.Windows.Input;
 using Eto.Wpf.CustomControls;
 using Eto.Wpf.Forms.Menu;
 using System.ComponentModel;
+using System.Reflection;
+using System.Collections.Generic;
 
 namespace Eto.Wpf.Forms
 {
@@ -47,6 +49,8 @@ namespace Eto.Wpf.Forms
 			get { return new System.Windows.Interop.WindowInteropHelper(Control).EnsureHandle(); }
 		}
 
+		public static bool EnablePerMonitorDpiSupport { get; set; } = true;
+
 		public swc.DockPanel ContentPanel { get { return content; } }
 
 		public swc.DockPanel MainPanel { get { return main; } }
@@ -79,7 +83,8 @@ namespace Eto.Wpf.Forms
 				}
 				// stop form from auto-sizing after it is shown
 				Control.SizeToContent = sw.SizeToContent.Manual;
-				Control.MoveFocus(new swi.TraversalRequest(swi.FocusNavigationDirection.Next));
+				if (Control.ShowActivated)
+					Control.MoveFocus(new swi.TraversalRequest(swi.FocusNavigationDirection.Next));
 			};
 			Control.PreviewKeyDown += (sender, e) =>
 			{
@@ -91,15 +96,14 @@ namespace Eto.Wpf.Forms
 			};
 			// needed to handle Application.Terminating event
 			HandleEvent(Window.ClosingEvent);
-			SetupPerMonitorDpi();
 		}
 
 		void SetupPerMonitorDpi()
 		{
-			if (Win32.PerMonitorDpiSupported)
+			if (EnablePerMonitorDpiSupport && dpiHelper == null && Win32.PerMonitorDpiSupported && !PerMonitorDpiHelper.BuiltInPerMonitorSupported)
 			{
 				dpiHelper = new PerMonitorDpiHelper(Control);
-				Widget.LogicalPixelSizeChanged += (sender, e) => SetMinimumSize();
+				dpiHelper.ScaleChanged += (sender, e) => SetMinimumSize();
 			}
 		}
 
@@ -107,6 +111,8 @@ namespace Eto.Wpf.Forms
 		{
 			base.SetContentScale(true, true);
 		}
+
+		static EventInfo dpiChangedEvent = typeof(sw.Window).GetEvent("DpiChanged");
 
 		public override void AttachEvent(string id)
 		{
@@ -143,7 +149,7 @@ namespace Eto.Wpf.Forms
 							app.Callback.OnTerminating(app.Widget, args);
 						}
 						e.Cancel = args.Cancel;
-						IsApplicationClosing = !args.Cancel 
+						IsApplicationClosing = !args.Cancel
 							&& sw.Application.Current.MainWindow == Control
 							&& sw.Application.Current.ShutdownMode == sw.ShutdownMode.OnMainWindowClose;
 					};
@@ -161,6 +167,13 @@ namespace Eto.Wpf.Forms
 					Control.LocationChanged += (sender, e) => Callback.OnLocationChanged(Widget, EventArgs.Empty);
 					break;
 				case Window.LogicalPixelSizeChangedEvent:
+					if (PerMonitorDpiHelper.BuiltInPerMonitorSupported && dpiChangedEvent != null) // .NET 4.6.2 support!
+					{
+						var method = typeof(WpfWindow<TControl, TWidget, TCallback>).GetMethod(nameof(HandleLogicalPixelSizeChanged), BindingFlags.Instance | BindingFlags.NonPublic);
+						dpiChangedEvent.AddEventHandler(Control, Delegate.CreateDelegate(dpiChangedEvent.EventHandlerType, this, method));
+						break;
+					}
+					SetupPerMonitorDpi();
 					if (dpiHelper != null)
 						dpiHelper.ScaleChanged += (sender, e) => Callback.OnLogicalPixelSizeChanged(Widget, EventArgs.Empty);
 					break;
@@ -170,12 +183,18 @@ namespace Eto.Wpf.Forms
 			}
 		}
 
+		void HandleLogicalPixelSizeChanged(object sender, EventArgs e)
+		{
+			Callback.OnLogicalPixelSizeChanged(Widget, EventArgs.Empty);
+		}
+
 		static bool IsApplicationClosing { get; set; }
 
 		public override void OnLoad(EventArgs e)
 		{
 			base.OnLoad(e);
 			SetScale(false, false);
+			SetupPerMonitorDpi();
 		}
 
 		protected virtual void UpdateClientSize(Size size)
@@ -301,6 +320,42 @@ namespace Eto.Wpf.Forms
 			}
 		}
 
+		internal void SetStyle(Win32.WS_EX style, bool value)
+		{
+			var styleInt = Win32.GetWindowLong(WindowHandle, Win32.GWL.EXSTYLE);
+			if (value)
+				styleInt |= (uint)style;
+			else
+				styleInt &= (uint)~style;
+
+			Win32.SetWindowLong(WindowHandle, Win32.GWL.EXSTYLE, styleInt);
+		}
+
+		internal void SetStyle(Win32.WS style, bool value)
+		{
+			var styleInt = Win32.GetWindowLong(WindowHandle, Win32.GWL.STYLE);
+			if (value)
+				styleInt |= (uint)style;
+			else
+				styleInt &= (uint)~style;
+
+			Win32.SetWindowLong(WindowHandle, Win32.GWL.STYLE, styleInt);
+		}
+
+		sw.Interop.WindowInteropHelper windowInterop;
+		IntPtr WindowHandle
+		{
+			get
+			{
+				if (windowInterop == null)
+				{
+					windowInterop = new sw.Interop.WindowInteropHelper(Control);
+					windowInterop.EnsureHandle();
+				}
+				return windowInterop.Handle;
+			}
+		}
+
 		protected virtual void SetResizeMode()
 		{
 			if (resizable)
@@ -310,20 +365,8 @@ namespace Eto.Wpf.Forms
 			else
 				Control.ResizeMode = sw.ResizeMode.NoResize;
 
-			var hwnd = new sw.Interop.WindowInteropHelper(Control).Handle;
-			if (hwnd != IntPtr.Zero)
-			{
-				var val = Win32.GetWindowLong(hwnd, Win32.GWL.STYLE);
-				if (maximizable)
-					val |= (uint)Win32.WS.MAXIMIZEBOX;
-				else
-					val &= ~(uint)Win32.WS.MAXIMIZEBOX;
-				if (minimizable)
-					val |= (uint)Win32.WS.MINIMIZEBOX;
-				else
-					val &= ~(uint)Win32.WS.MINIMIZEBOX;
-				Win32.SetWindowLong(hwnd, Win32.GWL.STYLE, val);
-			}
+			SetStyle(Win32.WS.MAXIMIZEBOX, maximizable);
+			SetStyle(Win32.WS.MINIMIZEBOX, minimizable);
 		}
 
 		public virtual bool ShowInTaskbar
@@ -524,19 +567,26 @@ namespace Eto.Wpf.Forms
 		{
 			if (Control.WindowState == sw.WindowState.Minimized)
 				Control.WindowState = sw.WindowState.Normal;
-			Control.Activate();
+
+			if (!Control.Focusable)
+			{
+				var hWnd = WindowHandle;
+				if (hWnd != IntPtr.Zero)
+					Win32.SetWindowPos(hWnd, Win32.HWND_TOP, 0, 0, 0, 0, Win32.SWP.NOSIZE | Win32.SWP.NOMOVE);
+			}
+			else
+				Control.Activate();
 		}
 
 		public void SendToBack()
 		{
 			if (Topmost)
 				return;
-			var hWnd = new sw.Interop.WindowInteropHelper(Control).Handle;
+			var hWnd = WindowHandle;
 			if (hWnd != IntPtr.Zero)
-				Win32.SetWindowPos(hWnd, Win32.HWND_BOTTOM, 0, 0, 0, 0, Win32.SWP.NOSIZE | Win32.SWP.NOMOVE);
+				Win32.SetWindowPos(hWnd, Win32.HWND_BOTTOM, 0, 0, 0, 0, Win32.SWP.NOSIZE | Win32.SWP.NOMOVE | Win32.SWP.NOACTIVATE);
 			var window = sw.Application.Current.Windows.OfType<sw.Window>().FirstOrDefault(r => r != Control);
-			if (window != null)
-				window.Focus();
+			window?.Focus();
 		}
 
 		public override Color BackgroundColor
@@ -585,7 +635,7 @@ namespace Eto.Wpf.Forms
 
 		public float LogicalPixelSize
 		{
-			get { return (float)(dpiHelper?.Scale ?? 1f); }
+			get { return (float)(dpiHelper?.Scale ?? (sw.PresentationSource.FromVisual(Control)?.CompositionTarget.TransformToDevice.M11 ?? 1.0)); }
 		}
 	}
 }

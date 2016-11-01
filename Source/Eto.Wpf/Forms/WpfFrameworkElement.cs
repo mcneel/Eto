@@ -145,9 +145,10 @@ namespace Eto.Wpf.Forms
 
         public virtual void UpdatePreferredSize()
         {
-            var parent = Widget.VisualParent.GetWpfContainer();
-            if (parent != null)
-                parent.UpdatePreferredSize();
+			if (Widget.Loaded)
+			{
+				Widget.VisualParent.GetWpfContainer()?.UpdatePreferredSize();
+			}
         }
 
 		public virtual void SetScale(bool xscale, bool yscale)
@@ -242,12 +243,12 @@ namespace Eto.Wpf.Forms
 			Control.InvalidateVisual();
 		}
 
-		public void SuspendLayout()
+		public virtual void SuspendLayout()
 		{
 
 		}
 
-		public void ResumeLayout()
+		public virtual void ResumeLayout()
 		{
 		}
 
@@ -440,7 +441,7 @@ namespace Eto.Wpf.Forms
 		{
 			var args = e.ToEto(Control);
 			Callback.OnMouseMove(Widget, args);
-			e.Handled = args.Handled || isMouseCaptured;
+			e.Handled = args.Handled;
 		}
 
 		void HandleMouseUp(object sender, swi.MouseButtonEventArgs e)
@@ -448,7 +449,7 @@ namespace Eto.Wpf.Forms
 			var args = e.ToEto(Control, swi.MouseButtonState.Released);
 			Callback.OnMouseUp(Widget, args);
 			e.Handled = args.Handled;
-			if (Control.IsMouseCaptured && isMouseCaptured)
+			if (isMouseCaptured && Control.IsMouseCaptured)
 			{
 				Control.ReleaseMouseCapture();
 				isMouseCaptured = false;
@@ -464,7 +465,6 @@ namespace Eto.Wpf.Forms
 
 		void HandleMouseDown(object sender, swi.MouseButtonEventArgs e)
 		{
-			isMouseCaptured = false;
 			var args = e.ToEto(Control);
 			if (!(Control is swc.Control) && e.ClickCount == 2)
 				Callback.OnMouseDoubleClick(Widget, args);
@@ -474,7 +474,7 @@ namespace Eto.Wpf.Forms
 				Callback.OnMouseDown(Widget, args);
 			}
 			e.Handled = args.Handled || !WpfFrameworkElementHelper.ShouldCaptureMouse;
-			if (WpfFrameworkElementHelper.ShouldCaptureMouse 
+			if (WpfFrameworkElementHelper.ShouldCaptureMouse
 				&& (
 					// capture mouse automatically so mouse moves outside control are captured until released
 					// but only if the control that was clicked is this control
@@ -482,9 +482,12 @@ namespace Eto.Wpf.Forms
 					|| e.Handled
 				))
 			{
-				e.Handled = true;
 				isMouseCaptured = true;
 				Control.CaptureMouse();
+			}
+			else
+			{
+				isMouseCaptured = false;
 			}
 		}
 
