@@ -150,7 +150,7 @@
     <Compile Include="..\Eto.Gtk\Forms\Controls\ImageViewHandler.cs" />
     <Compile Include="..\Eto.Gtk\Forms\Controls\LabelHandler.cs" />
     <Compile Include="..\Eto.Gtk\Forms\Controls\ListBoxHandler.cs" />
-    <Compile Include="..\Eto.Gtk\Forms\Controls\NumericUpDownHandler.cs" />
+    <Compile Include="..\Eto.Gtk\Forms\Controls\NumericStepperHandler.cs" />
     <Compile Include="..\Eto.Gtk\Forms\Controls\PanelHandler.cs" />
     <Compile Include="..\Eto.Gtk\Forms\Controls\RadioButtonHandler.cs" />
     <Compile Include="..\Eto.Gtk\Forms\Controls\ScrollableHandler.cs" />
@@ -246,7 +246,6 @@
     <Compile Include="..\Eto.Gtk\Forms\GtkControl.cs" />
     <Compile Include="..\Eto.Gtk\Forms\Controls\RichTextAreaHandler.cs" />
     <Compile Include="..\Eto.Gtk\Forms\KeyboardHandler.cs" />
-    <Compile Include="..\Eto.Gtk\NativeMethods.cs" />
     <Compile Include="..\Eto.Gtk\Forms\Cells\ProgressCellHandler.cs" />
     <Compile Include="..\Eto.Gtk\Drawing\RadialGradientBrushHandler.cs" />
     <Compile Include="..\Eto.Gtk\Forms\Controls\ExpanderHandler.cs" />
@@ -271,6 +270,46 @@
     <Compile Include="..\Eto.Gtk\Forms\ColorDialogHandlerGtk34.cs">
       <Link>ColorDialogHandlerGtk34.cs</Link>
     </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\AboutDialogHandler.cs">
+      <Link>AboutDialogHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\Controls\StepperHandler.cs">
+      <Link>StepperHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\Controls\TextStepperHandler.cs">
+      <Link>TextStepperHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\Controls\FilePickerHandler.cs">
+      <Link>FilePickerHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\FontDialogHandlerGtk32.cs">
+      <Link>FontDialogHandlerGtk32.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\Controls\FontPickerHandler.cs">
+      <Link>FontPickerHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\OpenWithDialogHandler.cs">
+      <Link>OpenWithDialogHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\Controls\DocumentControlHandler.cs">
+      <Link>DocumentControlHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\Controls\DocumentPageHandler.cs">
+      <Link>DocumentPageHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\NativeMethods.cs">
+      <Link>GtkNativeMethods.cs</Link>
+      <DependentUpon>NativeMethods.tt</DependentUpon>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\LinuxTrayIndicatorHandler.cs">
+      <Link>LinuxTrayIndicatorHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\OtherTrayIndicatorHandler.cs">
+      <Link>Forms\OtherTrayIndicatorHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\Eto.Gtk\Forms\LinuxNotificationHandler.cs">
+      <Link>LinuxNotificationHandler.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <PropertyGroup>
@@ -288,14 +327,20 @@
       <Name>Eto - pcl</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Eto.Gtk\NativeMethods.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>NativeMethods.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
   <Import Project="..\Shared\Common.targets" />
   <ProjectExtensions>
     <MonoDevelop>
       <Properties>
         <Policies>
           <TextStylePolicy inheritsSet="null" scope="text/x-csharp" />
-          <CSharpFormattingPolicy inheritsSet="Mono" inheritsScope="text/x-csharp" scope="text/x-csharp" />
-          <TextStylePolicy FileWidth="120" TabsToSpaces="False" inheritsSet="VisualStudio" inheritsScope="text/plain" scope="text/plain" />
+          <CSharpFormattingPolicy IndentBlock="True" IndentBraces="False" IndentSwitchCaseSection="True" LabelPositioning="OneLess" NewLinesForBracesInTypes="True" NewLinesForBracesInMethods="True" SpaceWithinMethodDeclarationParenthesis="False" SpaceBetweenEmptyMethodDeclarationParentheses="False" SpaceWithinMethodCallParentheses="False" SpaceBetweenEmptyMethodCallParentheses="False" SpaceAfterControlFlowStatementKeyword="True" SpaceWithinExpressionParentheses="False" SpaceWithinCastParentheses="False" SpaceWithinOtherParentheses="False" SpaceAfterCast="False" SpacesIgnoreAroundVariableDeclaration="False" SpaceBetweenEmptySquareBrackets="False" SpaceWithinSquareBrackets="False" SpaceAfterColonInBaseTypeDeclaration="True" SpaceAfterComma="True" SpaceAfterDot="False" SpaceAfterSemicolonsInForStatement="True" SpaceBeforeColonInBaseTypeDeclaration="True" SpaceBeforeComma="False" SpaceBeforeDot="False" SpaceBeforeSemicolonsInForStatement="False" SpacingAroundBinaryOperator="Single" WrappingPreserveSingleLine="True" WrappingKeepStatementsOnSingleLine="True" PlaceSystemDirectiveFirst="True" IndentSwitchSection="True" NewLinesForBracesInProperties="True" NewLinesForBracesInAccessors="True" NewLinesForBracesInAnonymousMethods="True" NewLinesForBracesInControlBlocks="True" NewLinesForBracesInAnonymousTypes="True" NewLinesForBracesInObjectCollectionArrayInitializers="True" NewLinesForBracesInLambdaExpressionBody="True" NewLineForElse="True" NewLineForCatch="True" NewLineForFinally="True" NewLineForMembersInObjectInit="True" NewLineForMembersInAnonymousTypes="True" NewLineForClausesInQuery="True" SpacingAfterMethodDeclarationName="False" SpaceAfterMethodCallName="False" SpaceBeforeOpenSquareBracket="False" inheritsSet="Mono" inheritsScope="text/x-csharp" scope="text/x-csharp" />
+          <TextStylePolicy TabWidth="4" IndentWidth="4" RemoveTrailingWhitespace="True" NoTabsAfterNonTabs="False" EolMarker="Native" FileWidth="120" TabsToSpaces="False" inheritsSet="VisualStudio" inheritsScope="text/plain" scope="text/plain" />
         </Policies>
       </Properties>
     </MonoDevelop>

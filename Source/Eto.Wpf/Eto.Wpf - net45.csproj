@@ -39,6 +39,14 @@
   </PropertyGroup>
   <Import Project="..\Shared\Common.props" />
   <ItemGroup>
+    <Reference Include="Microsoft.WindowsAPICodePack, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Windows7APICodePack-Core.1.1.0.0\lib\Microsoft.WindowsAPICodePack.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAPICodePack.Shell, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Windows7APICodePack-Shell.1.1.0.0\lib\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -94,8 +102,14 @@
     <Compile Include="Drawing\SystemColorsHandler.cs" />
     <Compile Include="Forms\Controls\ExpanderHandler.cs" />
     <Compile Include="Forms\Cells\CustomCellHandler.cs" />
+    <Compile Include="Forms\Controls\TextStepperHandler.cs" />
+    <Compile Include="Forms\Controls\StepperHandler.cs" />
+    <Compile Include="Forms\EtoBorder.cs" />
     <Compile Include="Forms\Menu\MenuHandler.cs" />
+    <Compile Include="Forms\NotificationHandler.cs" />
     <Compile Include="Forms\PerMonitorDpiHelper.cs" />
+    <Compile Include="Forms\TrayIndicatorHandler.cs" />
+    <Compile Include="Forms\VistaSelectFolderDialogHandler.cs" />
     <Compile Include="Win32.dib.cs" />
     <Compile Include="WpfConversions.cs" />
     <Compile Include="CustomControls\EditableTextBlock.cs" />
@@ -155,7 +169,7 @@
     <Compile Include="Forms\Controls\ImageViewHandler.cs" />
     <Compile Include="Forms\Controls\LabelHandler.cs" />
     <Compile Include="Forms\Controls\ListBoxHandler.cs" />
-    <Compile Include="Forms\Controls\NumericUpDownHandler.cs" />
+    <Compile Include="Forms\Controls\NumericStepperHandler.cs" />
     <Compile Include="Forms\Controls\PanelHandler.cs" />
     <Compile Include="Forms\Controls\PasswordBoxHandler.cs" />
     <Compile Include="Forms\Controls\ProgressBarHandler.cs" />
@@ -245,6 +259,7 @@
     <Compile Include="..\Shared\BaseBitmapData.cs">
       <Link>Drawing\BaseBitmapData.cs</Link>
     </Compile>
+    <Compile Include="Forms\OpenWithDialogHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\packages\Extended.Wpf.Toolkit.2.6\lib\net40\Xceed.Wpf.Toolkit.dll">
@@ -257,6 +272,12 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>FontDialogResources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\Windows7APICodePack-Core.1.1.0.0\lib\Microsoft.WindowsAPICodePack.dll">
+      <Link>CustomControls\Assemblies\Microsoft.WindowsAPICodePack.dll</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\Windows7APICodePack-Shell.1.1.0.0\lib\Microsoft.WindowsAPICodePack.Shell.dll">
+      <Link>CustomControls\Assemblies\Microsoft.WindowsAPICodePack.Shell.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

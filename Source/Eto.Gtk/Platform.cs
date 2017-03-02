@@ -17,13 +17,13 @@ namespace Eto.GtkSharp
 {
 	static class Helper
 	{
+		public static bool UseHeaderBar;
+
 		public static void Init()
 		{
 			var args = new string[0];
 			if (Gtk.Application.InitCheck(string.Empty, ref args))
-			{
 				Gdk.Threads.Enter();
-			}
 		}
 	}
 
@@ -99,8 +99,12 @@ namespace Eto.GtkSharp
 			p.Add<ComboBox.IHandler>(() => new ComboBoxHandler());
 			p.Add<ColorPicker.IHandler>(() => new ColorPickerHandler());
 			p.Add<DateTimePicker.IHandler>(() => new DateTimePickerHandler());
+			p.Add<DocumentControl.IHandler>(() => new DocumentControlHandler());
+			p.Add<DocumentPage.IHandler>(() => new DocumentPageHandler());
 			p.Add<Drawable.IHandler>(() => new DrawableHandler());
 			p.Add<Expander.IHandler>(() => new ExpanderHandler());
+			p.Add<FilePicker.IHandler>(() => new FilePickerHandler());
+			p.Add<FontPicker.IHandler>(() => new FontPickerHandler());
 			p.Add<GridColumn.IHandler>(() => new GridColumnHandler());
 			p.Add<GridView.IHandler>(() => new GridViewHandler());
 			p.Add<GroupBox.IHandler>(() => new GroupBoxHandler());
@@ -108,7 +112,7 @@ namespace Eto.GtkSharp
 			p.Add<Label.IHandler>(() => new LabelHandler());
 			p.Add<LinkButton.IHandler>(() => new LinkButtonHandler());
 			p.Add<ListBox.IHandler>(() => new ListBoxHandler());
-			p.Add<NumericUpDown.IHandler>(() => new NumericUpDownHandler());
+			p.Add<NumericStepper.IHandler>(() => new NumericStepperHandler());
 			p.Add<Panel.IHandler>(() => new PanelHandler());
 			p.Add<PasswordBox.IHandler>(() => new PasswordBoxHandler());
 			p.Add<ProgressBar.IHandler>(() => new ProgressBarHandler());
@@ -125,6 +129,8 @@ namespace Eto.GtkSharp
 			p.Add<TreeView.IHandler>(() => new TreeViewHandler());
 			p.Add<WebView.IHandler>(() => new WebViewHandler());
 			p.Add<RichTextArea.IHandler>(() => new RichTextAreaHandler());
+			p.Add<Stepper.IHandler>(() => new ThemedStepperHandler());
+			p.Add<TextStepper.IHandler>(() => new TextStepperHandler());
 
 			// Forms.Menu
 			p.Add<CheckMenuItem.IHandler>(() => new CheckMenuItemHandler());
@@ -147,12 +153,12 @@ namespace Eto.GtkSharp
 			p.Add<ToolBar.IHandler>(() => new ToolBarHandler());
 
 			// Forms
+			p.Add<AboutDialog.IHandler>(() => new AboutDialogHandler());
 			p.Add<Application.IHandler>(() => new ApplicationHandler());
 			p.Add<Clipboard.IHandler>(() => new ClipboardHandler());
 			p.Add<ColorDialog.IHandler>(() => new ColorDialogHandler());
 			p.Add<Cursor.IHandler>(() => new CursorHandler());
 			p.Add<Dialog.IHandler>(() => new DialogHandler());
-			p.Add<FontDialog.IHandler>(() => new FontDialogHandler());
 			p.Add<Form.IHandler>(() => new FormHandler());
 			p.Add<MessageBox.IHandler>(() => new MessageBoxHandler());
 			p.Add<OpenFileDialog.IHandler>(() => new OpenFileDialogHandler());
@@ -165,6 +171,12 @@ namespace Eto.GtkSharp
 			p.Add<Screen.IScreensHandler>(() => new ScreensHandler());
 			p.Add<Keyboard.IHandler>(() => new KeyboardHandler());
 			p.Add<FixedMaskedTextProvider.IHandler>(() => new FixedMaskedTextProviderHandler());
+			if (EtoEnvironment.Platform.IsLinux)
+				p.Add<TrayIndicator.IHandler>(() => new LinuxTrayIndicatorHandler());
+            else
+                p.Add<TrayIndicator.IHandler>(() => new OtherTrayIndicatorHandler());
+			if (EtoEnvironment.Platform.IsLinux)
+				p.Add<Notification.IHandler>(() => new LinuxNotificationHandler());
 
 			// IO
 			p.Add<SystemIcons.IHandler>(() => new SystemIconsHandler());
@@ -177,7 +189,14 @@ namespace Eto.GtkSharp
 				p.Add<ColorDialog.IHandler>(() => new ColorDialogHandlerGtk34());
 			else
 				p.Add<ColorDialog.IHandler>(() => new ColorDialogHandler());
+
+			if (Gtk.Global.MinorVersion >= 2)
+				p.Add<FontDialog.IHandler>(() => new FontDialogHandlerGtk32());
+			else
+				p.Add<FontDialog.IHandler>(() => new FontDialogHandler());
+				
 			p.Add<Spinner.IHandler>(() => new SpinnerHandler());
+			p.Add<OpenWithDialog.IHandler>(() => new OpenWithDialogHandler());
 			#else
 			p.Add<ColorDialog.IHandler>(() => new ColorDialogHandler());
 			p.Add<Spinner.IHandler>(() => new ThemedSpinnerHandler());

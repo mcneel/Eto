@@ -175,14 +175,20 @@ namespace Eto.Test.UnitTests
 			}, timeout);
 		}
 
+		public static void Form(Action<Form> test, int timeout = DefaultTimeout)
+		{
+			Form<Form>(test, timeout);
+		}
+
 		/// <summary>
 		/// Test operations on a form
 		/// </summary>
 		/// <param name="test">Delegate to execute on the form</param>
 		/// <param name="timeout">Timeout to wait for the operation to complete</param>
-		public static void Form(Action<Form> test, int timeout = DefaultTimeout)
+		public static void Form<T>(Action<T> test, int timeout = DefaultTimeout)
+			where T: Form, new()
 		{
-			Form form = null;
+			T form = null;
 			bool shown = false;
 			try
 			{
@@ -191,7 +197,7 @@ namespace Eto.Test.UnitTests
 					if (!Platform.Instance.Supports<Form>())
 						Assert.Inconclusive("This platform does not support IForm");
 
-					form = new Form();
+					form = new T();
 
 					test(form);
 
@@ -233,6 +239,58 @@ namespace Eto.Test.UnitTests
 				replay,
 				timeout
 			);
+		}
+
+		public static void ManualForm(string description, Func<Form, Control> init)
+		{
+			Exception exception = null;
+			Form(form =>
+			{
+				try
+				{
+					var c = init(form);
+
+					var failButton = new Button { Text = "Fail" };
+					failButton.Click += (sender, e) =>
+					{
+						try
+						{
+							Assert.Fail(description);
+						}
+						catch (Exception ex)
+						{
+							exception = ex;
+						}
+						finally
+						{
+							form.Close();
+						}
+					};
+
+					var passButton = new Button { Text = "Pass" };
+					passButton.Click += (sender, e) => form.Close();
+
+					form.Content = new StackLayout
+					{
+						Padding = 10,
+						Spacing = 10,
+						Items =
+					{
+						new StackLayoutItem(c, HorizontalAlignment.Stretch, true),
+						description,
+						new StackLayoutItem(TableLayout.Horizontal(2, failButton, passButton), HorizontalAlignment.Center)
+					}
+					};
+				}
+				catch (Exception ex)
+				{
+					exception = ex;
+				}
+
+			}, timeout: -1);
+
+			if (exception != null)
+				ExceptionDispatchInfo.Capture(exception).Throw();
 		}
 
 		/// <summary>

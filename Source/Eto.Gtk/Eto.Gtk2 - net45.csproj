@@ -60,6 +60,7 @@
     <Compile Include="Forms\Controls\NativeControlHandler.cs" />
     <Compile Include="Forms\Controls\PasswordBoxHandler.cs" />
     <Compile Include="Forms\Controls\ProgressBarHandler.cs" />
+    <Compile Include="Forms\Controls\StepperHandler.cs" />
     <Compile Include="Forms\Controls\TreeViewHandler.cs" />
     <Compile Include="Forms\FontDialogHandler.cs" />
     <Compile Include="Drawing\BitmapHandler.cs">
@@ -95,12 +96,14 @@
     <Compile Include="Forms\GtkFileDialog.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Forms\LinuxNotificationHandler.cs" />
     <Compile Include="Forms\MessageBoxHandler.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Forms\OpenFileDialog.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Forms\OtherTrayIndicatorHandler.cs" />
     <Compile Include="Forms\PixelLayoutHandler.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -123,7 +126,7 @@
     <Compile Include="Forms\Controls\GroupBoxHandler.cs" />
     <Compile Include="Forms\Controls\ImageViewHandler.cs" />
     <Compile Include="Forms\Controls\LabelHandler.cs" />
-    <Compile Include="Forms\Controls\NumericUpDownHandler.cs" />
+    <Compile Include="Forms\Controls\NumericStepperHandler.cs" />
     <Compile Include="Forms\Controls\PanelHandler.cs" />
     <Compile Include="Forms\Controls\RadioButtonHandler.cs" />
     <Compile Include="Forms\Controls\ScrollableHandler.cs" />
@@ -249,7 +252,6 @@
     </Compile>
     <Compile Include="Forms\Controls\RichTextAreaHandler.cs" />
     <Compile Include="Forms\KeyboardHandler.cs" />
-    <Compile Include="NativeMethods.cs" />
     <Compile Include="..\Shared\FixedMaskedTextProviderHandler.cs">
       <Link>Forms\FixedMaskedTextProviderHandler.cs</Link>
     </Compile>
@@ -261,7 +263,16 @@
       <Link>Drawing\BaseBitmapData.cs</Link>
     </Compile>
     <Compile Include="Drawing\IconFrameHandler.cs" />
-    <Compile Include="Forms\ColorDialogHandlerGtk34.cs" />
+    <Compile Include="Forms\AboutDialogHandler.cs" />
+    <Compile Include="Forms\Controls\TextStepperHandler.cs" />
+    <Compile Include="Forms\Controls\FilePickerHandler.cs" />
+    <Compile Include="Forms\Controls\FontPickerHandler.cs" />
+    <Compile Include="Forms\Controls\DocumentControlHandler.cs" />
+    <Compile Include="Forms\Controls\DocumentPageHandler.cs" />
+    <Compile Include="NativeMethods.cs">
+      <DependentUpon>NativeMethods.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\LinuxTrayIndicatorHandler.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <PropertyGroup>
@@ -286,6 +297,12 @@
       <Project>{35EF0A4E-2A1A-492C-8BED-106774EA09F2}</Project>
       <Name>Eto - pcl</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="NativeMethods.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>NativeMethods.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <Import Project="..\Shared\Common.targets" />
 </Project>

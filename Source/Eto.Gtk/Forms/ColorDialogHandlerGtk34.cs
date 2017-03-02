@@ -1,5 +1,5 @@
-#if GTK3
 using System;
+using Eto.Drawing;
 using Eto.Forms;
 
 namespace Eto.GtkSharp.Forms
@@ -12,22 +12,21 @@ namespace Eto.GtkSharp.Forms
 			AllowAlpha = false;
 		}
 
-
 		public bool AllowAlpha
+		{
+			get { return NativeMethods.gtk_color_chooser_get_use_alpha(Control.Handle); }
+			set{  NativeMethods.gtk_color_chooser_set_use_alpha(Control.Handle, value); }
+		}
+
+		public Color Color
 		{
 			get
 			{
-				return NativeMethods.gtk_color_chooser_get_use_alpha(Control.Handle);
-			}
-			set
-			{
-				NativeMethods.gtk_color_chooser_set_use_alpha(Control.Handle, value);
-			}
-		}
+				Gdk.RGBA rgba;
+				NativeMethods.gtk_color_chooser_get_rgba(Control.Handle, out rgba);
 
-		public Eto.Drawing.Color Color
-		{
-			get { return NativeMethods.gtk_color_chooser_get_rgba(Control.Handle).ToEto(); }
+				return rgba.ToEto();
+			}
 			set { NativeMethods.gtk_color_chooser_set_rgba(Control.Handle, new double[] { value.R, value.G, value.B, value.A }); }
 		}
 
@@ -46,12 +45,9 @@ namespace Eto.GtkSharp.Forms
 			Control.Hide();
 
 			if (response == Gtk.ResponseType.Ok)
-			{
 				Callback.OnColorChanged(Widget, EventArgs.Empty);
-			}
+			
 			return response.ToEto();
 		}
 	}
 }
-
-#endif

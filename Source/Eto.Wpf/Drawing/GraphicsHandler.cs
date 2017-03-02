@@ -5,6 +5,8 @@ using swmi = System.Windows.Media.Imaging;
 using Eto.Drawing;
 using System.Globalization;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Eto.Wpf.Drawing
 {
@@ -82,7 +84,7 @@ namespace Eto.Wpf.Drawing
 			drawingVisual = new swm.DrawingVisual();
 			visual = drawingVisual;
 			Control = drawingVisual.RenderOpen();
-			Control.DrawImage(image.ToWpf(), bounds);
+			Control.DrawImage(image.ToWpf(1), bounds);
         }
 
 		protected override void Initialize()
@@ -129,6 +131,25 @@ namespace Eto.Wpf.Drawing
 			SetOffset(false);
 			var wpfPen = pen.ToWpf(true);
 			Control.DrawLine(wpfPen, new sw.Point(startx, starty), new sw.Point(endx, endy));
+		}
+
+		public void DrawLines(Pen pen, IEnumerable<PointF> points)
+		{
+			using (var path = new GraphicsPath())
+			{
+				path.AddLines(points);
+				DrawPath(pen, path);
+			}
+		}
+
+		public void DrawPolygon(Pen pen, IEnumerable<PointF> points)
+		{
+			using (var path = new GraphicsPath())
+			{
+				path.AddLines(points);
+				path.CloseFigure();
+				DrawPath(pen, path);
+			}
 		}
 
 		public void FillRectangle(Brush brush, float x, float y, float width, float height)
@@ -236,7 +257,7 @@ namespace Eto.Wpf.Drawing
 		public void DrawImage(Image image, float x, float y, float width, float height)
 		{
 			SetOffset(true);
-			var src = image.ToWpfScale((float)DPI, new Size((int)width, (int)height));
+			var src = image.ToWpf((float)DPI, new Size((int)width, (int)height));
 			var size = new SizeF((float)src.PixelWidth, (float)src.PixelHeight) / (float)DPI;
 
 			if ((ImageInterpolation == ImageInterpolation.High || ImageInterpolation == ImageInterpolation.Default)
@@ -254,7 +275,7 @@ namespace Eto.Wpf.Drawing
 		public void DrawImage(Image image, RectangleF source, RectangleF destination)
 		{
 			SetOffset(true);
-			var src = image.ToWpfScale((float)DPI);
+			var src = image.ToWpf((float)DPI);
             Control.PushClip(new swm.RectangleGeometry(destination.ToWpf()));
             bool scale = source.Size != destination.Size;
             bool translate = source.X > 0 || source.Y > 0;

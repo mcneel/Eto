@@ -135,12 +135,12 @@ namespace Eto.GtkSharp.Forms
 			set { Control.Name = value; }
 		}
 
-		public void Invalidate()
+		public void Invalidate(bool invalidateChildren)
 		{
 			Control.QueueDraw();
 		}
 
-		public void Invalidate(Rectangle rect)
+		public void Invalidate(Rectangle rect, bool invalidateChildren)
 		{
 			Control.QueueDrawArea(rect.X, rect.Y, rect.Width, rect.Height);
 		}
@@ -465,8 +465,10 @@ namespace Eto.GtkSharp.Forms
 				{
 					Handler.Callback.OnMouseDoubleClick(Handler.Widget, mouseArgs);
 				}
-				if (!mouseArgs.Handled && Handler.Control.CanFocus && !Handler.Control.HasFocus)
-					Handler.Control.GrabFocus();
+				if (!mouseArgs.Handled && Handler.EventControl.CanFocus && !Handler.EventControl.HasFocus)
+					Handler.EventControl.GrabFocus();
+				if (args.RetVal != null && (bool)args.RetVal == true)
+					return;
 				args.RetVal = mouseArgs.Handled;
 			}
 
