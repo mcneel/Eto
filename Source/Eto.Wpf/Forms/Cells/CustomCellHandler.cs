@@ -72,13 +72,23 @@ namespace Eto.Wpf.Forms.Cells
 				return cachedList;
 			}
 
-			EtoBorder Create(swc.DataGridCell cell, object dataItem)
+			EtoBorder Create(swc.DataGridCell cell)
 			{
 				var control = cell.Content as EtoBorder;
 				if (control == null)
 				{
 					control = new EtoBorder { Column = this };
 					control.Args = new WpfCellEventArgs(-1, null, CellStates.None);
+					control.Unloaded += (sender, e) =>
+					{
+						var ctl = sender as EtoBorder;
+						ctl.Control?.DetachNative();
+					};
+					control.Loaded += (sender, e) =>
+					{
+						var ctl = sender as EtoBorder;
+						ctl.Control?.AttachNative();
+					};
 					control.DataContextChanged += (sender, e) =>
 					{
 						var ctl = sender as EtoBorder;
@@ -91,12 +101,12 @@ namespace Eto.Wpf.Forms.Cells
 							Stack<Control> cache;
 							if (child != null)
 							{
-							// store old child into cache
-							cache = GetCached(ctl.Identifier);
+								// store old child into cache
+								cache = GetCached(ctl.Identifier);
 								cache.Push(child);
 							}
-						// get new from cache or create if none created yet
-						cache = GetCached(id);
+							// get new from cache or create if none created yet
+							cache = GetCached(id);
 							if (cache.Count > 0)
 								child = cache.Pop();
 							else
@@ -105,7 +115,7 @@ namespace Eto.Wpf.Forms.Cells
 							var handler = child.GetWpfFrameworkElement();
 							if (handler != null)
 								handler.SetScale(true, true);
-							ctl.Child = child.ToNative(true);
+							ctl.Child = child.ToNative(ctl.IsLoaded);
 						}
 						Handler.Callback.OnConfigureCell(Handler.Widget, ctl.Args, child);
 
@@ -123,18 +133,17 @@ namespace Eto.Wpf.Forms.Cells
 						Handler.Callback.OnConfigureCell(Handler.Widget, control.Args, control.Control);
 					};
 				}
-				control.DataContext = dataItem;
 				return control;
 			}
 
 			protected override sw.FrameworkElement GenerateElement(swc.DataGridCell cell, object dataItem)
 			{
-				return Handler.SetupCell(Create(cell, dataItem));
+				return Handler.SetupCell(Create(cell));
 			}
 
 			protected override sw.FrameworkElement GenerateEditingElement(swc.DataGridCell cell, object dataItem)
 			{
-				return Handler.SetupCell(Create(cell, dataItem));
+				return Handler.SetupCell(Create(cell));
 			}
 		}
 

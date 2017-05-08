@@ -348,11 +348,12 @@
     <Compile Include="Forms\Controls\DocumentPage.cs" />
     <Compile Include="Forms\TrayIndicator.cs" />
     <Compile Include="Forms\Notification.cs" />
+    <Compile Include="Forms\Controls\MaskedTextStepper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\..\LICENSE">
       <Link>LICENSE</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <Import Project="..\Shared\Common.targets" />

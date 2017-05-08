@@ -25,8 +25,10 @@ namespace Eto.Wpf
 
 		public override bool IsWpf { get { return true; } }
 
-		public override PlatformFeatureFlags SupportedFeatures =>
-			PlatformFeatureFlags.DrawableWithTransparentContent;
+		public override PlatformFeatures SupportedFeatures =>
+			PlatformFeatures.DrawableWithTransparentContent
+            | PlatformFeatures.CustomCellSupportsControlView
+			| PlatformFeatures.TabIndexWithCustomContainers;
 
 		static Platform()
 		{
@@ -104,7 +106,9 @@ namespace Eto.Wpf
 			p.Add<TextArea.IHandler>(() => new TextAreaHandler());
 			p.Add<TextBox.IHandler>(() => new TextBoxHandler());
 			p.Add<TreeGridView.IHandler>(() => new TreeGridViewHandler());
+#pragma warning disable CS0618 // Type or member is obsolete
 			p.Add<TreeView.IHandler>(() => new TreeViewHandler());
+#pragma warning restore CS0618 // Type or member is obsolete
 			//p.Add<WebView.IHandler>(()  => new WebViewHandler ());
 			p.Add<RichTextArea.IHandler>(() => new RichTextAreaHandler());
 			p.Add<Stepper.IHandler>(() => new StepperHandler());

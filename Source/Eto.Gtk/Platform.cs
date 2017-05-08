@@ -52,6 +52,9 @@ namespace Eto.GtkSharp
 		public override string ID { get { return "gtk2"; } }
 		#else
 		public override string ID { get { return "gtk3"; } }
+
+		public override PlatformFeatures SupportedFeatures => PlatformFeatures.DrawableWithTransparentContent;
+
 		#endif
 		public Platform()
 		{
@@ -126,7 +129,9 @@ namespace Eto.GtkSharp
 			p.Add<TextArea.IHandler>(() => new TextAreaHandler());
 			p.Add<TextBox.IHandler>(() => new TextBoxHandler());
 			p.Add<TreeGridView.IHandler>(() => new TreeGridViewHandler());
+#pragma warning disable CS0618 // Type or member is obsolete
 			p.Add<TreeView.IHandler>(() => new TreeViewHandler());
+#pragma warning restore CS0618 // Type or member is obsolete
 			p.Add<WebView.IHandler>(() => new WebViewHandler());
 			p.Add<RichTextArea.IHandler>(() => new RichTextAreaHandler());
 			p.Add<Stepper.IHandler>(() => new ThemedStepperHandler());
