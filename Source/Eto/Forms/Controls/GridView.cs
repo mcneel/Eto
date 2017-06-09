@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
@@ -51,7 +51,7 @@ namespace Eto.Forms
 		}
 	}
 
-		/// <summary>
+	/// <summary>
 	/// Information of a cell in the <see cref="TreeGridView"/>
 	/// </summary>
 	public class GridCell

@@ -29,6 +29,57 @@ namespace Eto.Forms
 	}
 
 	/// <summary>
+	/// Event arguments for cell-based events of a <see cref="Grid"/> triggered by the mouse.
+	/// </summary>
+	public class GridCellMouseEventArgs : MouseEventArgs
+	{
+		/// <summary>
+		/// Gets the grid column that triggered the event.
+		/// </summary>
+		/// <value>The grid column.</value>
+		public GridColumn GridColumn { get; private set; }
+
+		/// <summary>
+		/// Gets the row that triggered the event, or -1 if no row.
+		/// </summary>
+		/// <value>The grid row.</value>
+		public int Row { get; private set; }
+
+		/// <summary>
+		/// Gets the index of the column that triggered the event, or -1 if no column.
+		/// </summary>
+		/// <value>The column index.</value>
+		public int Column { get; private set; }
+
+		/// <summary>
+		/// Gets the item of the row that triggered the event, or null if there was no item.
+		/// </summary>
+		/// <value>The row item.</value>
+		public object Item { get; private set; }
+
+		/// <summary>
+		/// Initializes a new instance of the GridCellMouseEventArgs class.
+		/// </summary>
+		/// <param name="gridColumn">Grid column that triggered the event.</param>
+		/// <param name="row">The row that triggered the event, or -1 if no row.</param>
+		/// <param name="column">Column that triggered the event, or -1 if no column.</param>
+		/// <param name="item">Item of the row that triggered the event, or null if no item.</param>
+		/// <param name="buttons">Mouse buttons that are pressed during the event</param>
+		/// <param name="modifiers">Key modifiers currently pressed</param>
+		/// <param name="location">Location of the mouse cursor in the grid</param>
+		/// <param name="delta">Delta of the scroll wheel.</param>
+		/// <param name="pressure">Pressure of a stylus or touch, if applicable. 1.0f for full pressure or not supported</param>
+		public GridCellMouseEventArgs(GridColumn gridColumn, int row, int column, object item, MouseButtons buttons, Keys modifiers, PointF location, SizeF? delta = null, float pressure = 1.0f)
+			: base(buttons, modifiers, location, delta, pressure)
+		{
+			this.GridColumn = gridColumn;
+			this.Row = row;
+			this.Column = column;
+			this.Item = item;
+		}
+	}
+
+	/// <summary>
 	/// Enumeration for the type of grid lines to show around each column/row in a <see cref="Grid"/>
 	/// </summary>
 	[Flags]
@@ -184,7 +235,7 @@ namespace Eto.Forms
 		/// <summary>
 		/// Occurs when an individual cell is clicked.
 		/// </summary>
-		public event EventHandler<GridViewCellEventArgs> CellClick
+		public event EventHandler<GridCellMouseEventArgs> CellClick
 		{
 			add { Properties.AddHandlerEvent(CellClickEvent, value); }
 			remove { Properties.RemoveEvent(CellClickEvent, value); }
@@ -194,7 +245,7 @@ namespace Eto.Forms
 		/// Raises the <see cref="CellClick"/> event.
 		/// </summary>
 		/// <param name="e">Grid cell event arguments.</param>
-		protected virtual void OnCellClick(GridViewCellEventArgs e)
+		protected virtual void OnCellClick(GridCellMouseEventArgs e)
 		{
 			Properties.TriggerEvent(CellClickEvent, this, e);
 		}
@@ -207,7 +258,7 @@ namespace Eto.Forms
 		/// <summary>
 		/// Occurs when an individual cell is double clicked.
 		/// </summary>
-		public event EventHandler<GridViewCellEventArgs> CellDoubleClick
+		public event EventHandler<GridCellMouseEventArgs> CellDoubleClick
 		{
 			add { Properties.AddHandlerEvent(CellDoubleClickEvent, value); }
 			remove { Properties.RemoveEvent(CellDoubleClickEvent, value); }
@@ -217,7 +268,7 @@ namespace Eto.Forms
 		/// Raises the <see cref="CellDoubleClick"/> event.
 		/// </summary>
 		/// <param name="e">Grid cell event arguments.</param>
-		protected virtual void OnCellDoubleClick(GridViewCellEventArgs e)
+		protected virtual void OnCellDoubleClick(GridCellMouseEventArgs e)
 		{
 			Properties.TriggerEvent(CellDoubleClickEvent, this, e);
 		}
@@ -544,12 +595,12 @@ namespace Eto.Forms
 			/// <summary>
 			/// Raises the cell click event.
 			/// </summary>
-			void OnCellClick(Grid widget, GridViewCellEventArgs e);
+			void OnCellClick(Grid widget, GridCellMouseEventArgs e);
 
 			/// <summary>
 			/// Raises the cell double click event.
 			/// </summary>
-			void OnCellDoubleClick(Grid widget, GridViewCellEventArgs e);
+			void OnCellDoubleClick(Grid widget, GridCellMouseEventArgs e);
 
 			/// <summary>
 			/// Raises the selection changed event.
@@ -577,7 +628,8 @@ namespace Eto.Forms
 			/// </summary>
 			public void OnCellEditing(Grid widget, GridViewCellEventArgs e)
 			{
-				widget.Platform.Invoke(() => widget.OnCellEditing(e));
+				using (widget.Platform.Context)
+					widget.OnCellEditing(e);
 			}
 
 			/// <summary>
@@ -585,23 +637,26 @@ namespace Eto.Forms
 			/// </summary>
 			public void OnCellEdited(Grid widget, GridViewCellEventArgs e)
 			{
-				widget.Platform.Invoke(() => widget.OnCellEdited(e));
+				using (widget.Platform.Context)
+					widget.OnCellEdited(e);
 			}
 
 			/// <summary>
 			/// Raises the cell click event.
 			/// </summary>
-			public void OnCellClick(Grid widget, GridViewCellEventArgs e)
+			public void OnCellClick(Grid widget, GridCellMouseEventArgs e)
 			{
-				widget.Platform.Invoke(() => widget.OnCellClick(e));
+				using (widget.Platform.Context)
+					widget.OnCellClick(e);
 			}
 
 			/// <summary>
 			/// Raises the cell double click event.
 			/// </summary>
-			public void OnCellDoubleClick(Grid widget, GridViewCellEventArgs e)
+			public void OnCellDoubleClick(Grid widget, GridCellMouseEventArgs e)
 			{
-				widget.Platform.Invoke(() => widget.OnCellDoubleClick(e));
+				using (widget.Platform.Context)
+					widget.OnCellDoubleClick(e);
 			}
 
 			/// <summary>
@@ -609,8 +664,11 @@ namespace Eto.Forms
 			/// </summary>
 			public void OnSelectionChanged(Grid widget, EventArgs e)
 			{
-				if (!widget.supressSelectionChanged)
-					widget.Platform.Invoke(() => widget.OnSelectionChanged(e));
+				using (widget.Platform.Context)
+				{
+					if (!widget.supressSelectionChanged)
+						widget.OnSelectionChanged(e);
+				}
 			}
 
 			/// <summary>
@@ -618,7 +676,8 @@ namespace Eto.Forms
 			/// </summary>
 			public void OnColumnHeaderClick(Grid widget, GridColumnEventArgs e)
 			{
-				widget.Platform.Invoke(() => widget.OnColumnHeaderClick(e));
+				using (widget.Platform.Context)
+					widget.OnColumnHeaderClick(e);
 			}
 
 			/// <summary>
@@ -626,7 +685,8 @@ namespace Eto.Forms
 			/// </summary>
 			public void OnCellFormatting(Grid widget, GridCellFormatEventArgs e)
 			{
-				widget.Platform.Invoke(() => widget.OnCellFormatting(e));
+				using (widget.Platform.Context)
+					widget.OnCellFormatting(e);
 			}
 		}
 
