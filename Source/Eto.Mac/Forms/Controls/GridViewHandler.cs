@@ -269,7 +269,6 @@ namespace Eto.Mac.Forms.Controls
 				};
 				*/
 					break;
-				case Grid.CellDoubleClickEvent:
 				case Grid.CellClickEvent:
 					// Handled in EtoTableView
 					break;
