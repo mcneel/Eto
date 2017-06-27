@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using swf = System.Windows.Forms;
 using Eto.Forms;
 using System.Linq;
@@ -218,23 +218,21 @@ namespace Eto.WinForms.Forms.Controls
 					};
 					break;
 				case Grid.CellClickEvent:
-					Control.CellMouseClick += (sender, e) =>
+					Control.CellClick += (sender, e) =>
 					{
 						var item = GetItemAtRow(e.RowIndex);
 						var column = Widget.Columns[e.ColumnIndex];
-						var location = PointFromScreen(Mouse.Position); // e.Location is relative to the cell. ugh.
-						Callback.OnCellClick(Widget, new GridViewCellMouseEventArgs(column, e.RowIndex, e.ColumnIndex, item, e.Button.ToEto(), swf.Control.ModifierKeys.ToEto(), location, e.ToEtoDelta()));
+						Callback.OnCellClick(Widget, new GridViewCellEventArgs(column, e.RowIndex, e.ColumnIndex, item));
 					};
 					break;
 				case Grid.CellDoubleClickEvent:
-					Control.CellMouseDoubleClick += (sender, e) =>
+					Control.CellDoubleClick += (sender, e) =>
 					{
 						if (e.RowIndex > -1)
 						{
 							var item = GetItemAtRow(e.RowIndex);
 							var column = Widget.Columns[e.ColumnIndex];
-							var location = PointFromScreen(Mouse.Position); // e.Location is relative to the cell. ugh.
-							Callback.OnCellDoubleClick(Widget, new GridViewCellMouseEventArgs(column, e.RowIndex, e.ColumnIndex, item, e.Button.ToEto(), swf.Control.ModifierKeys.ToEto(), location, e.ToEtoDelta()));
+							Callback.OnCellDoubleClick(Widget, new GridViewCellEventArgs(column, e.RowIndex, e.ColumnIndex, item));
 						}
 					};
 					break;

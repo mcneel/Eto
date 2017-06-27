@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using Eto.Forms;
 using System.Linq;
 using System.Collections.Generic;
 using Eto.GtkSharp.Forms.Cells;
 using Eto.GtkSharp.Forms.Menu;
-using Eto.Drawing;
 
 namespace Eto.GtkSharp.Forms.Controls
 {
@@ -165,7 +164,7 @@ namespace Eto.GtkSharp.Forms.Controls
 						var columnIndex = GetColumnOfItem(e.Column);
 						var item = GetItem(e.Path);
 						var column = columnIndex == -1 ? null : Widget.Columns[columnIndex];
-						Callback.OnCellClick(Widget, new GridViewCellMouseEventArgs(column, rowIndex, columnIndex, item, Mouse.Buttons, Keyboard.Modifiers, PointFromScreen(Mouse.Position)));
+						Callback.OnCellDoubleClick(Widget, new GridViewCellEventArgs(column, rowIndex, columnIndex, item));
 					};
 					break;
 				case Grid.SelectionChangedEvent:
@@ -180,7 +179,8 @@ namespace Eto.GtkSharp.Forms.Controls
 		[GLib.ConnectBefore]
 		protected virtual void OnTreeButtonPress(object sender, Gtk.ButtonPressEventArgs e)
 		{
-			if (e.Event.Type == Gdk.EventType.TwoButtonPress || e.Event.Type == Gdk.EventType.ThreeButtonPress)
+			// If clicked mouse button is not the primary button, return.
+			if (e.Event.Button != 1 || e.Event.Type == Gdk.EventType.TwoButtonPress || e.Event.Type == Gdk.EventType.ThreeButtonPress)
 				return;
 
 			Gtk.TreePath path;
@@ -196,8 +196,7 @@ namespace Eto.GtkSharp.Forms.Controls
 			var item = GetItem(path);
 			var column = columnIndex == -1 || columnIndex >= Widget.Columns.Count ? null : Widget.Columns[columnIndex];
 
-			var loc = PointFromScreen(new PointF((float)e.Event.XRoot, (float)e.Event.YRoot));
-			Callback.OnCellClick(Widget, new GridViewCellMouseEventArgs(column, rowIndex, columnIndex, item, e.Event.ToEtoMouseButtons(), e.Event.State.ToEtoKey(), loc));
+			Callback.OnCellClick(Widget, new GridViewCellEventArgs(column, rowIndex, columnIndex, item));
 		}
 
 		public override void OnLoadComplete(EventArgs e)

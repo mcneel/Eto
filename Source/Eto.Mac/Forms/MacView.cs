@@ -738,16 +738,14 @@ namespace Eto.Mac.Forms
 				sdpoint = ContentControl.Window.ConvertScreenToBase(sdpoint);
 			}
 			sdpoint = ContentControl.ConvertPointFromView(sdpoint, null);
-			if (!ContentControl.IsFlipped)
-				sdpoint.Y = ContentControl.Frame.Height - sdpoint.Y;
+			sdpoint.Y = ContentControl.Frame.Height - sdpoint.Y;
 			return sdpoint.ToEto();
 		}
 
 		public virtual PointF PointToScreen(PointF point)
 		{
 			var sdpoint = point.ToNS();
-			if (!ContentControl.IsFlipped)
-				sdpoint.Y = ContentControl.Frame.Height - sdpoint.Y;
+			sdpoint.Y = ContentControl.Frame.Height - sdpoint.Y;
 			sdpoint = ContentControl.ConvertPointToView(sdpoint, null);
 			if (ContentControl.Window != null)
 			{

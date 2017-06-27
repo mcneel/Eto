@@ -161,29 +161,13 @@ namespace Eto.Mac
 			}
 		}
 
-		public static PointF ToEto(this CGPoint locationInWindow, NSView view)
+		public static PointF GetLocation(NSView view, NSEvent theEvent)
 		{
-			var loc = view.ConvertPointFromView(locationInWindow, null);
+			var loc = view.ConvertPointFromView(theEvent.LocationInWindow, null);
 			if (!view.IsFlipped)
 				loc.Y = view.Frame.Height - loc.Y;
 			return loc.ToEto();
 		}
-
-		public static GridViewCellEventArgs CreateCellEventArgs(GridColumn column, NSView tableView, int row, int col, object item)
-		{
-			return new GridViewCellEventArgs(column, row, col, item);
-		}
-
-		public static GridViewCellMouseEventArgs CreateCellMouseEventArgs(GridColumn column, NSView view, int row, int col, object item, NSEvent theEvent = null)
-		{
-			var ev = theEvent ?? NSApplication.SharedApplication.CurrentEvent;
-			var buttons = ev.GetMouseButtons();
-			var modifiers = ev.ModifierFlags.ToEto();
-			var location = ev.LocationInWindow.ToEto(view);
-			return new GridViewCellMouseEventArgs(column, row, col, item, buttons, modifiers, location);
-		}
-
-		public static PointF GetLocation(NSView view, NSEvent theEvent) => theEvent.LocationInWindow.ToEto(view);
 
 		public static MouseEventArgs GetMouseEvent(NSView view, NSEvent theEvent, bool includeWheel)
 		{

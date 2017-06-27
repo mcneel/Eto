@@ -216,7 +216,6 @@
     <Compile Include="UnitTests\Forms\Controls\RichTextAreaTests.cs" />
     <Compile Include="Sections\Behaviors\TabIndexSection.cs" />
     <Compile Include="UnitTests\Forms\Controls\ControlTests.cs" />
-    <Compile Include="UnitTests\Forms\Controls\GridViewTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Sections\Serialization\Json\Test.json">
@@ -239,10 +238,7 @@
     <MonoDevelop>
       <Properties>
         <Policies>
-          <DotNetNamingPolicy DirectoryNamespaceAssociation="PrefixedHierarchical" ResourceNamePolicy="MSBuild">
-            <inheritsSet />
-            <inheritsScope />
-          </DotNetNamingPolicy>
+          <DotNetNamingPolicy DirectoryNamespaceAssociation="PrefixedHierarchical" ResourceNamePolicy="MSBuild" />
         </Policies>
       </Properties>
     </MonoDevelop>
