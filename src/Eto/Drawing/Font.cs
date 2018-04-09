@@ -104,6 +104,41 @@ namespace Eto.Drawing
 	}
 
 	/// <summary>
+	/// Trimming options for drawing text into boundary frames.
+	/// </summary>
+	/// <remarks>
+	/// These specify the various ways in which text exceeding the frame dimensions will be handled.
+	/// </remarks>
+	/// <copyright>(c) 2014 by Curtis Wensley</copyright>
+	/// <license type="BSD-3">See LICENSE for full terms</license>
+	public enum TextTrimming
+	{
+		// DavidR Added this on 2018/04/09
+		/// <summary>
+		/// Text is neither trimmed, nor clipped, and will extend below the bottom of the frame
+		/// in case of overflow.
+		/// </summary>
+		None = 0,
+		/// <summary>
+		/// Any character outside of the frame will simply be dropped, with no
+		/// visual cue as to whether the visible text is intact.
+		/// </summary>
+		Clip = 1,
+		/// <summary>
+		/// Any character outside of the frame will be dropped, and the last
+		/// visible character will be replaced by the trimming symbol.
+		/// </summary>
+		/// <remarks>(Q: is it always ellipsis or does that depend on culture?)</remarks>
+		TrimCharacter = 2,
+		/// <summary>
+		/// Any word outside of the frame will be dropped, and a trimming symbol
+		/// will be drawn instead.
+		/// </summary>
+		/// <remarks>(Q: is it always ellipsis or does that depend on culture?)</remarks>
+		TrimWord = 3,
+	}
+
+	/// <summary>
 	/// Defines a format for text
 	/// </summary>
 	/// <remarks>

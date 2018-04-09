@@ -709,6 +709,39 @@ namespace Eto.Drawing
 		}
 
 		/// <summary>
+		/// Draws text with the specified <paramref name="font"/>, <paramref name="brush"/> and location
+		/// </summary>
+		/// <param name="font">Font to draw the text with</param>
+		/// <param name="brush">Brush to stroke the text</param>
+		/// <param name="frame">Frame of text</param>
+		/// <param name="trimming">Trimming algorithm to apply to overflowing text</param>
+		/// <param name="text">Text string to draw</param>
+		public void DrawText(Font font, SolidBrush brush, RectangleF frame, TextTrimming trimming, string text)
+		{
+			// DavidR Added this on 2018/04/09
+			if (string.IsNullOrEmpty(text)) return;
+			if (frame.IsEmpty) return;
+			Handler.DrawText(font, brush, frame, trimming, text);
+		}
+
+		/// <summary>
+		/// Draws text with the specified <paramref name="font"/>, <paramref name="color"/> and location
+		/// </summary>
+		/// <param name="font">Font to draw the text with</param>
+		/// <param name="color">Color of the text</param>
+		/// <param name="frame">Frame of text</param>
+		/// <param name="trimming">Trimming algorithm to apply to overflowing text</param>
+		/// <param name="text">Text string to draw</param>
+		public void DrawText(Font font, Color color, RectangleF frame, TextTrimming trimming, string text)
+		{
+			// DavidR Added this on 2018/04/09
+			if (string.IsNullOrEmpty(text)) return;
+			if (frame.IsEmpty) return;
+			using (var brush = new SolidBrush(color))
+				Handler.DrawText(font, brush, frame, trimming, text);
+		}
+
+		/// <summary>
 		/// Measures the string with the given <paramref name="font"/>
 		/// </summary>
 		/// <param name="font">Font to measure with</param>
@@ -718,6 +751,21 @@ namespace Eto.Drawing
 		{
 			if (string.IsNullOrEmpty(text)) return SizeF.Empty; // handle null explicitly
 			return Handler.MeasureString(font, text);
+		}
+
+		/// <summary>
+		/// Measures the wrapped string with the given <paramref name="font"/>
+		/// </summary>
+		/// <param name="font">Font to measure with</param>
+		/// <param name="text">Text string to measure</param>
+		/// <param name="maxWidth">Maximum allowed width of text column</param>
+		/// <returns>Size representing the dimensions of the entire text would take to draw given the specified <paramref name="font"/></returns>
+		public virtual SizeF MeasureString(Font font, string text, float maxWidth)
+		{
+			// DavidR Added this on 2018/04/09
+			if (string.IsNullOrEmpty(text)) return SizeF.Empty; // handle null explicitly
+			if (maxWidth <= 0.0f) return SizeF.Empty;
+			return Handler.MeasureString(font, text, maxWidth);
 		}
 
 		/// <summary>
@@ -1206,12 +1254,31 @@ namespace Eto.Drawing
 			void DrawText(Font font, SolidBrush brush, float x, float y, string text);
 
 			/// <summary>
+			/// Draws text with the specified <paramref name="font"/>, <paramref name="brush"/> and location
+			/// </summary>
+			/// <param name="font">Font to draw the text with</param>
+			/// <param name="brush">A brush with the color of the text</param>
+			/// <param name="frame">Position and wrapping limits</param>
+			/// <param name="trimming">Trimming algorithm to apply to overflowing text</param>
+			/// <param name="text">Text string to draw</param>
+			void DrawText(Font font, SolidBrush brush, RectangleF frame, TextTrimming trimming, string text);
+
+			/// <summary>
 			/// Measures the string with the given <paramref name="font"/>
 			/// </summary>
 			/// <param name="font">Font to measure with</param>
 			/// <param name="text">Text string to measure</param>
 			/// <returns>Size representing the dimensions of the entire text would take to draw given the specified <paramref name="font"/></returns>
 			SizeF MeasureString(Font font, string text);
+
+			/// <summary>
+			/// Measures the wrapped string with the given <paramref name="font"/>
+			/// </summary>
+			/// <param name="font">Font to measure with</param>
+			/// <param name="text">Text string to measure</param>
+			/// <param name="maxWidth">Maximum allowed width of text column</param>
+			/// <returns>Size representing the dimensions of the entire text would take to draw given the specified <paramref name="font"/></returns>
+			SizeF MeasureString(Font font, string text, float maxWidth);
 
 			/// <summary>
 			/// Flushes the drawing (for some platforms)

@@ -10,37 +10,37 @@ using System.Linq;
 
 namespace Eto.Wpf.Drawing
 {
-    /// <summary>
-    /// Handler for <see cref="Graphics"/>
-    /// </summary>
-    /// <copyright>(c) 2012-2014 by Curtis Wensley</copyright>
-    /// <license type="BSD-3">See LICENSE for full terms</license>
-    public class GraphicsHandler : WidgetHandler<swm.DrawingContext, Graphics>, Graphics.IHandler
-    {
-        swm.Visual visual;
-        swm.DrawingGroup group;
-        swm.DrawingVisual drawingVisual;
-        RectangleF? clipBounds;
-        RectangleF initialClip;
-        swm.PathGeometry clipPath;
-        sw.Rect bounds;
-        readonly bool disposeControl;
+	/// <summary>
+	/// Handler for <see cref="Graphics"/>
+	/// </summary>
+	/// <copyright>(c) 2012-2014 by Curtis Wensley</copyright>
+	/// <license type="BSD-3">See LICENSE for full terms</license>
+	public class GraphicsHandler : WidgetHandler<swm.DrawingContext, Graphics>, Graphics.IHandler
+	{
+		swm.Visual visual;
+		swm.DrawingGroup group;
+		swm.DrawingVisual drawingVisual;
+		RectangleF? clipBounds;
+		RectangleF initialClip;
+		swm.PathGeometry clipPath;
+		sw.Rect bounds;
+		readonly bool disposeControl;
 		bool isOffset;
 
 		Bitmap image;
-        swm.DrawingContext baseContext;
+		swm.DrawingContext baseContext;
 
-        public GraphicsHandler()
-        {
-        }
+		public GraphicsHandler()
+		{
+		}
 
 		static readonly object PixelOffsetMode_Key = new object();
 
-        public PixelOffsetMode PixelOffsetMode
-        {
-            get { return Widget != null ? Widget.Properties.Get<PixelOffsetMode>(PixelOffsetMode_Key) : default(PixelOffsetMode); }
-            set { Widget.Properties.Set(PixelOffsetMode_Key, value); }
-        }
+		public PixelOffsetMode PixelOffsetMode
+		{
+			get { return Widget != null ? Widget.Properties.Get<PixelOffsetMode>(PixelOffsetMode_Key) : default(PixelOffsetMode); }
+			set { Widget.Properties.Set(PixelOffsetMode_Key, value); }
+		}
 
 		void SetOffset(bool fill)
 		{
@@ -53,7 +53,7 @@ namespace Eto.Wpf.Drawing
 			}
 		}
 
-        public float PointsPerPixel
+		public float PointsPerPixel
 		{
 			get { return 72f / 96f; }
 		}
@@ -72,7 +72,7 @@ namespace Eto.Wpf.Drawing
 			this.initialClip = initialClip;
 
 			Control.PushClip(new swm.RectangleGeometry(bounds));
-        }
+		}
 
 		public bool IsRetained { get { return true; } }
 
@@ -84,7 +84,7 @@ namespace Eto.Wpf.Drawing
 			visual = drawingVisual = new swm.DrawingVisual();
 			Control = drawingVisual.RenderOpen();
 			Control.DrawImage(image.ToWpf(1), bounds);
-        }
+		}
 
 		protected override void Initialize()
 		{
@@ -95,7 +95,7 @@ namespace Eto.Wpf.Drawing
 
 		static readonly object DPI_Key = new object();
 
-        public double DPI
+		public double DPI
 		{
 			get
 			{
@@ -123,8 +123,7 @@ namespace Eto.Wpf.Drawing
 			SetOffset(false);
 			Control.DrawRectangle(null, pen.ToWpf(true), WpfExtensions.NormalizedRect(x, y, width, height));
 		}
-
-
+		
 		public void DrawLine(Pen pen, float startx, float starty, float endx, float endy)
 		{
 			SetOffset(false);
@@ -260,45 +259,45 @@ namespace Eto.Wpf.Drawing
 			var size = new SizeF((float)src.PixelWidth, (float)src.PixelHeight) / (float)DPI;
 
 			if ((ImageInterpolation == ImageInterpolation.High || ImageInterpolation == ImageInterpolation.Default)
-                && (width != size.Width || height != size.Height))
-            {
-                // better image quality by using transformed bitmap, plus it is actually faster
-                src = new swmi.TransformedBitmap(
-                    src,
-                    new swm.ScaleTransform(width / size.Width * 96 / src.DpiX, height / size.Height * 96 / src.DpiY, 0, 0)
-                    );
-            }
-            Control.DrawImage(src, WpfExtensions.NormalizedRect(x, y, width, height));
+				&& (width != size.Width || height != size.Height))
+			{
+				// better image quality by using transformed bitmap, plus it is actually faster
+				src = new swmi.TransformedBitmap(
+					src,
+					new swm.ScaleTransform(width / size.Width * 96 / src.DpiX, height / size.Height * 96 / src.DpiY, 0, 0)
+					);
+			}
+			Control.DrawImage(src, WpfExtensions.NormalizedRect(x, y, width, height));
 		}
 
 		public void DrawImage(Image image, RectangleF source, RectangleF destination)
 		{
 			SetOffset(true);
 			var src = image.ToWpf((float)DPI);
-            Control.PushClip(new swm.RectangleGeometry(destination.ToWpf()));
-            bool scale = source.Size != destination.Size;
-            bool translate = source.X > 0 || source.Y > 0;
-            double scalex = 1.0;
-            double scaley = 1.0;
-            if (scale)
-            {
-                scalex = (double)destination.Width / (double)source.Width;
-                scaley = (double)destination.Height / (double)source.Height;
-                Control.PushTransform(new swm.ScaleTransform(scalex, scaley));
-            }
-            if (translate)
-                Control.PushTransform(new swm.TranslateTransform(-source.X, -source.Y));
-            var rect = new sw.Rect(destination.X / scalex, destination.Y / scaley, image.Size.Width, image.Size.Height);
-            Control.DrawImage(src, rect);
-            // pop for TranslateTransform
-            if (translate)
-                Control.Pop();
-            // pop again for ScaleTransform
-            if (scale)
-                Control.Pop();
-            // pop for PushClip
-            Control.Pop();
-        }
+			Control.PushClip(new swm.RectangleGeometry(destination.ToWpf()));
+			bool scale = source.Size != destination.Size;
+			bool translate = source.X > 0 || source.Y > 0;
+			double scalex = 1.0;
+			double scaley = 1.0;
+			if (scale)
+			{
+				scalex = (double)destination.Width / (double)source.Width;
+				scaley = (double)destination.Height / (double)source.Height;
+				Control.PushTransform(new swm.ScaleTransform(scalex, scaley));
+			}
+			if (translate)
+				Control.PushTransform(new swm.TranslateTransform(-source.X, -source.Y));
+			var rect = new sw.Rect(destination.X / scalex, destination.Y / scaley, image.Size.Width, image.Size.Height);
+			Control.DrawImage(src, rect);
+			// pop for TranslateTransform
+			if (translate)
+				Control.Pop();
+			// pop again for ScaleTransform
+			if (scale)
+				Control.Pop();
+			// pop for PushClip
+			Control.Pop();
+		}
 
 		public void DrawText(Font font, SolidBrush b, float x, float y, string text)
 		{
@@ -314,6 +313,49 @@ namespace Eto.Wpf.Drawing
 			}
 		}
 
+		public void DrawText(Font font, SolidBrush b, RectangleF frame, TextTrimming trimming, string text)
+		{
+			// DavidR Added this on 2018/04/09
+			SetOffset(true);
+			var fontHandler = font.Handler as FontHandler;
+			if (fontHandler != null)
+			{
+				var brush = b.ToWpf();
+				var formattedText = new swm.FormattedText(text, CultureInfo.CurrentUICulture, sw.FlowDirection.LeftToRight, fontHandler.WpfTypeface, fontHandler.PixelSize, brush);
+				if (fontHandler.WpfTextDecorationsFrozen != null)
+					formattedText.SetTextDecorations(fontHandler.WpfTextDecorationsFrozen, 0, text.Length);
+				formattedText.MaxTextWidth = frame.Width;
+
+				switch (trimming)
+				{
+					case TextTrimming.None:
+						formattedText.Trimming = sw.TextTrimming.None;
+						formattedText.MaxTextHeight = double.MaxValue; // Question: is using such a big value safe?
+						break;
+
+					case TextTrimming.Clip:
+						formattedText.Trimming = sw.TextTrimming.None;
+						formattedText.MaxTextHeight = frame.Height;
+						break;
+
+					case TextTrimming.TrimCharacter:
+						formattedText.Trimming = sw.TextTrimming.CharacterEllipsis;
+						formattedText.MaxTextHeight = frame.Height;
+						break;
+
+					case TextTrimming.TrimWord:
+						formattedText.Trimming = sw.TextTrimming.WordEllipsis;
+						formattedText.MaxTextHeight = frame.Height;
+						break;
+
+					default:
+						throw new ArgumentOutOfRangeException(nameof(trimming), trimming, null);
+				}
+
+				Control.DrawText(formattedText, new sw.Point(frame.X, frame.Y));
+			}
+		}
+
 		public SizeF MeasureString(Font font, string text)
 		{
 			var result = SizeF.Empty;
@@ -324,6 +366,25 @@ namespace Eto.Wpf.Drawing
 				var brush = new swm.SolidColorBrush(swm.Colors.White);
 				var formattedText = new swm.FormattedText(text, CultureInfo.CurrentUICulture, sw.FlowDirection.LeftToRight, fontHandler.WpfTypeface, fontHandler.PixelSize, brush);
 				result = new SizeF((float)formattedText.WidthIncludingTrailingWhitespace, (float)formattedText.Height);
+			}
+
+			return result;
+		}
+
+		public SizeF MeasureString(Font font, string text, float maxWidth)
+		{
+			// DavidR Added this on 2018/04/09
+			var result = SizeF.Empty;
+
+			var fontHandler = font.Handler as FontHandler;
+			if (fontHandler != null)
+			{
+				var brush = new swm.SolidColorBrush(swm.Colors.White);
+				var formattedText = new swm.FormattedText(text, CultureInfo.CurrentUICulture, sw.FlowDirection.LeftToRight, fontHandler.WpfTypeface, fontHandler.PixelSize, brush);
+				formattedText.MaxTextWidth = maxWidth;
+				result = new SizeF(
+					(float)formattedText.WidthIncludingTrailingWhitespace, 
+					(float)Math.Ceiling(formattedText.Height));
 			}
 
 			return result;
@@ -574,7 +635,7 @@ namespace Eto.Wpf.Drawing
 			path = path.Clone();
 			if (transforms != null && transforms.Current != null)
 				path.Transform(transforms.Current);
-            clipPath = path.ToWpf(); // require a clone so changes to path don't affect current clip
+			clipPath = path.ToWpf(); // require a clone so changes to path don't affect current clip
 			clipBounds = clipPath.Bounds.ToEtoF();
 			ApplyClip();
 			ApplyTransform();
