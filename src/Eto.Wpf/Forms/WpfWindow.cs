@@ -204,16 +204,24 @@ namespace Eto.Wpf.Forms
 					{
 						var args = new CancelEventArgs { Cancel = e.Cancel };
 						Callback.OnClosing(Widget, args);
-						if (!args.Cancel && sw.Application.Current.Windows.Count == 1)
+						var willShutDown =
+							(
+								sw.Application.Current.ShutdownMode == sw.ShutdownMode.OnLastWindowClose
+								&& sw.Application.Current.Windows.Count == 1
+							)
+							|| (
+								sw.Application.Current.ShutdownMode == sw.ShutdownMode.OnMainWindowClose
+								&& sw.Application.Current.MainWindow == Control
+							);
+
+						if (!args.Cancel && willShutDown)
 						{
 							// last window closing, so call OnTerminating to let the app abort terminating
 							var app = ((ApplicationHandler)Application.Instance.Handler);
 							app.Callback.OnTerminating(app.Widget, args);
 						}
 						e.Cancel = args.Cancel;
-						IsApplicationClosing = !args.Cancel
-							&& sw.Application.Current.MainWindow == Control
-							&& sw.Application.Current.ShutdownMode == sw.ShutdownMode.OnMainWindowClose;
+						IsApplicationClosing = !args.Cancel && willShutDown;
 					};
 					break;
 				case Window.WindowStateChangedEvent:
