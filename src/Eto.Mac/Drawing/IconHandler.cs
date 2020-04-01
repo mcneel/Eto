@@ -48,14 +48,12 @@ namespace Eto.Mac.Drawing
 		public IconHandler(NSImage image)
 		{
 			Control = image;
-			SetFrames();
 		}
 
 		public void Create(Stream stream)
 		{
 			var data = NSData.FromStream(stream);
 			Control = new NSImage(data);
-			SetFrames();
 		}
 
 		public void Create(string fileName)
@@ -63,42 +61,40 @@ namespace Eto.Mac.Drawing
 			if (!File.Exists(fileName))
 				throw new FileNotFoundException(string.Format(CultureInfo.CurrentCulture, "Icon not found"), fileName);
 			Control = new NSImage(fileName);
-			SetFrames();
 		}
 
-		void SetFrames()
+		IEnumerable<IconFrame> GetFrames()
 		{
-			_frames = new List<IconFrame>();
 			foreach (var rep in Control.Representations())
 			{
 				var img = new NSImage();
 				img.AddRepresentation(rep);
-				_frames.Add(IconFrame.FromControlObject(1, new Bitmap(new BitmapHandler(img))));
+				yield return IconFrame.FromControlObject(1, new Bitmap(new BitmapHandler(img)));
 			}
 		}
 
 		public void Create(IEnumerable<IconFrame> frames)
 		{
-			this._frames = frames.ToList();
+			_frames = frames.ToList();
 			var curScale = Screen.PrimaryScreen.LogicalPixelSize;
-			var item = this._frames.FirstOrDefault(r => Math.Abs(r.Scale - curScale) < 0.0001) ?? this._frames.First();
+			var item = _frames.FirstOrDefault(r => Math.Abs(r.Scale - curScale) < 0.0001) ?? _frames.First();
 
 			var size = Size.Ceiling((SizeF)item.PixelSize / (float)item.Scale).ToNS();
 
-			Control = new NSImage();
-			Control.Size = size;
-			foreach (var frame in this._frames)
+			Control = new NSImage { Size = size };
+			foreach (var frame in _frames)
 			{
-				var rep = frame.Bitmap.ToNS().Representations().First();
+				var rep = (NSImageRep)frame.Bitmap.ToNS().Representations().First().Copy();
+
 				rep.Size = (new SizeF(rep.PixelsWide, rep.PixelsHigh) / (float)frame.Scale).ToNS();
-				var mns = rep as IconFrameHandler.LazyImageRep;
-				if (mns != null)
+				if (rep is IconFrameHandler.LazyImageRep mns)
 				{
 					mns.Size = size;//(size.ToEto() * (float)r.Scale).ToNS();
 					var pixelSize = Size.Ceiling(size.ToEto() * (float)frame.Scale);
 					mns.PixelsHigh = pixelSize.Height;
 					mns.PixelsWide = pixelSize.Width;
 				}
+
 				Control.AddRepresentation(rep);
 			}
 		}
@@ -120,12 +116,6 @@ namespace Eto.Mac.Drawing
 			Control.Draw(destRect, sourceRect, NSCompositingOperation.SourceOver, 1, true, null);
 		}
 
-		public IEnumerable<IconFrame> Frames
-		{
-			get
-			{
-				return _frames;
-			}
-		}
+		public IEnumerable<IconFrame> Frames => _frames ?? (_frames = GetFrames().ToList());
 	}
 }

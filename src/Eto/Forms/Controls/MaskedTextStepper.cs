@@ -1,7 +1,8 @@
 using System;
 using System.Linq;
 using System.ComponentModel;
-
+using System.Globalization;
+using System.Text;
 
 namespace Eto.Forms
 {
@@ -48,11 +49,38 @@ namespace Eto.Forms
 		}
 
 		/// <summary>
+		/// Gets or sets the culture for the <see cref="NumericMaskedTextProvider.DecimalCharacter"/> and <see cref="NumericMaskedTextProvider.SignCharacters"/> formatting characters.
+		/// </summary>
+		public CultureInfo Culture
+		{
+			get => Provider.Culture;
+			set
+			{
+				Provider.Culture = value;
+				UpdateText();
+			}
+		}
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="Forms.NumericMaskedTextStepper{T}"/> class.
 		/// </summary>
 		public NumericMaskedTextStepper()
 			: base(new NumericMaskedTextProvider<T>())
 		{
+		}
+
+		/// <inheritdoc/>
+		protected override void OnKeyDown(KeyEventArgs e)
+		{
+			base.OnKeyDown(e);
+			if (e.KeyData == Keys.Decimal)
+			{
+				var pos = CaretIndex;
+				Provider.Insert(Provider.DecimalCharacter, ref pos);
+				UpdateText();
+				CaretIndex = pos;
+				e.Handled = true;
+			}
 		}
 	}
 
@@ -141,6 +169,10 @@ namespace Eto.Forms
 	/// <remarks>
 	/// This uses the <see cref="IMaskedTextProvider"/> as its interface to the mask.  
 	/// The mask can implement any format it wishes, including both fixed or variable length masks.
+	/// The MaskedTextStepper allows you to mask, or limit which characters can be entered in the text box with either a fixed, variable, or custom mask.
+	/// A fixed mask can be a phone number, postal code, or something that requires a specific format and can be created using the <see cref="FixedMaskedTextProvider"/>. 
+	/// A variable mask limits which characters can be entered but is not limited to a fixed number of characters.
+	/// An implementation of a variable mask is the <see cref="NumericMaskedTextBox{T}"/> which allows you to enter only numeric values in a text box, and places the positive / negative symbol at the beginning regardless of where you type it.
 	/// </remarks>
 	[ContentProperty("Provider")]
 	public class MaskedTextStepper : TextStepper
@@ -151,6 +183,7 @@ namespace Eto.Forms
 		static readonly object SupportsInsertKey = new object();
 		static readonly object OverwriteModeKey = new object();
 		static readonly object ShowPlaceholderWhenEmptyKey = new object();
+		static readonly object IsUpdatingTextKey = new object();
 
 		/// <summary>
 		/// Gets a cached value indicating the current platform supports getting the insert mode state.
@@ -255,12 +288,20 @@ namespace Eto.Forms
 			}
 		}
 
+		int IsUpdatingText
+		{
+			get => Properties.Get<int>(IsUpdatingTextKey);
+			set => Properties.Set(IsUpdatingTextKey, value);
+		}
+
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="MaskedTextStepper"/> class.
 		/// </summary>
 		public MaskedTextStepper()
 		{
 			HandleEvent(TextChangingEvent);
+			HandleEvent(TextChangedEvent);
 			HandleEvent(KeyDownEvent);
 			HandleEvent(GotFocusEvent);
 			HandleEvent(LostFocusEvent);
@@ -292,6 +333,7 @@ namespace Eto.Forms
 		{
 			if (provider == null)
 				return;
+			IsUpdatingText++;
 			var hasFocus = HasFocus;
 			if (!hasFocus && ShowPlaceholderWhenEmpty && provider.IsEmpty && !string.IsNullOrEmpty(PlaceholderText))
 				base.Text = null;
@@ -299,6 +341,7 @@ namespace Eto.Forms
 				base.Text = provider.DisplayText;
 			else
 				base.Text = provider.Text;
+			IsUpdatingText--;
 		}
 
 		/// <summary>
@@ -331,6 +374,22 @@ namespace Eto.Forms
 			base.OnLostFocus(e);
 			if (ShowPromptOnFocus || ShowPlaceholderWhenEmpty)
 				UpdateText();
+		}
+
+		/// <summary>
+		/// Raises the <see cref="TextControl.TextChanged"/> event.
+		/// </summary>
+		/// <param name="e">Event arguments.</param>
+		protected override void OnTextChanged(EventArgs e)
+		{
+			// handle undo/redo and drag/drop which doesn't always get a TextChanging event.
+			if (IsUpdatingText == 0 && provider != null)
+			{
+				provider.Text = base.Text;
+				UpdateText();
+			}
+
+			base.OnTextChanged(e);
 		}
 
 		/// <summary>
