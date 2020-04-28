@@ -14,6 +14,13 @@ using static System.Windows.WpfDataObjectExtensions;
 
 namespace Eto.Wpf.Forms
 {
+	public class DataFormatsHandler : DataFormats.IHandler
+	{
+		public virtual string Text => sw.DataFormats.UnicodeText;
+		public virtual string Html => sw.DataFormats.Html;
+		public virtual string Color => "Color";
+	}
+
 	public class DataObjectHandler : DataObjectHandler<DataObject, DataObject.ICallback>
 	{
 		public override string[] Types => Control.GetFormats();
@@ -58,7 +65,7 @@ namespace Eto.Wpf.Forms
 	}
 
 	public abstract class DataObjectHandler<TWidget, TCallback> : WidgetHandler<sw.DataObject, TWidget, TCallback>, DataObject.IHandler
-		where TWidget: Widget
+		where TWidget: Widget, IDataObject
 	{
 		protected bool IsExtended { get; }
 		public const string UniformResourceLocatorW_Format = "UniformResourceLocatorW";
@@ -95,7 +102,7 @@ namespace Eto.Wpf.Forms
 			set
 			{
 				if (IsExtended)
-					Control.SetDataEx(sw.DataFormats.Text, value);
+					Control.SetDataEx(sw.DataFormats.UnicodeText, value);
 				else
 					Control.SetText(value);
 				Update();
@@ -106,7 +113,7 @@ namespace Eto.Wpf.Forms
 
 		public virtual string Html
 		{
-			get { return Control.ContainsText(sw.TextDataFormat.Html) ? Control.GetText(sw.TextDataFormat.Html) : null; }
+			get { return ContainsHtml ? Control.GetText(sw.TextDataFormat.Html) : null; }
 			set
 			{
 				if (IsExtended)
@@ -127,7 +134,12 @@ namespace Eto.Wpf.Forms
 			get
 			{
 				if (InnerContainsImage)
-					return InnerGetImage().ToEto();
+				{
+					// clipboard returns true but the image returned is null sometimes.. hrmph.
+					var img = InnerGetImage().ToEto();
+					if (img != null)
+						return img;
+				}
 				if (Contains(sw.DataFormats.Dib) && InnerGetData(sw.DataFormats.Dib) is Stream stream)
 					return Win32.FromDIB(stream);
 				return null;
@@ -337,5 +349,20 @@ namespace Eto.Wpf.Forms
 		{
 			sw.WpfDataObjectExtensions.SetDragImage(Control, bitmap.ToWpf(), offset.ToWpf());
 		}
+
+		public bool TrySetObject(object value, string type)
+		{
+			return false;
+		}
+
+		public bool TryGetObject(string type, out object value)
+		{
+			value = null;
+			return false;
+		}
+
+		public void SetObject(object value, string type) => Widget.SetObject(value, type);
+
+		public T GetObject<T>(string type) => Widget.GetObject<T>(type);
 	}
 }
