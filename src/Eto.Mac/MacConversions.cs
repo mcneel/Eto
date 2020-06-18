@@ -293,7 +293,6 @@ namespace Eto.Mac
 				var mainScale = Screen.PrimaryScreen.RealScale;
 				var scales = new[] { 1f, 2f }; // generate both retina and non-retina representations
 				var sz = (float)Math.Ceiling(size.Value / mainScale);
-				var rep = nsimage.BestRepresentation(new CGRect(0, 0, sz, sz), null, null);
 				sz = size.Value;
 				var imgsize = image.Size;
 				var max = Math.Max(imgsize.Width, imgsize.Height);
@@ -303,11 +302,20 @@ namespace Eto.Mac
 				foreach (var scale in scales)
 				{
 					sz = (float)Math.Ceiling(size.Value * scale / mainScale);
-					rep = nsimage.BestRepresentation(new CGRect(0, 0, sz, sz), null, null);
+					var rep = nsimage.BestRepresentation(new CGRect(0, 0, sz, sz), null, null);
 					max = (int)Math.Max(rep.PixelsWide, rep.PixelsHigh);
 					sz = (float)Math.Ceiling(size.Value * scale);
-					var newsize = new CGSize((nint)(sz * rep.PixelsWide / max), (nint)(sz * rep.PixelsHigh / max));
-					newimage.AddRepresentation(rep.Resize(newsize, imageSize: newimagesize));
+					if (rep is NSCustomImageRep custom)
+					{
+						rep = custom.Copy() as NSImageRep;
+						rep.Size = newimagesize;
+						newimage.AddRepresentation(rep);
+					}
+					else
+					{
+						var newsize = new CGSize((nint)(sz * rep.PixelsWide / max), (nint)(sz * rep.PixelsHigh / max));
+						newimage.AddRepresentation(rep.Resize(newsize, imageSize: newimagesize));
+					}
 				}
 				nsimage = newimage;
 			}
@@ -354,19 +362,24 @@ namespace Eto.Mac
 
 		public static WindowStyle ToEtoWindowStyle(this NSWindowStyle style)
 		{
-			return style.HasFlag(NSWindowStyle.Titled) ? WindowStyle.Default : WindowStyle.None;
+			return style.HasFlag(NSWindowStyle.Utility) 
+				? WindowStyle.Utility
+				: style.HasFlag(NSWindowStyle.Titled) 
+				? WindowStyle.Default 
+				: WindowStyle.None;
 		}
 
 		public static NSWindowStyle ToNS(this WindowStyle style, NSWindowStyle existing)
 		{
-			const NSWindowStyle NONE_STYLE = NSWindowStyle.Borderless;
-			const NSWindowStyle DEFAULT_STYLE = NSWindowStyle.Titled;
+			existing &= ~(NSWindowStyle.Utility | NSWindowStyle.Titled | NSWindowStyle.Borderless);
 			switch (style)
 			{
 				case WindowStyle.Default:
-					return (existing & ~NONE_STYLE) | DEFAULT_STYLE;
+					return existing | NSWindowStyle.Titled;
 				case WindowStyle.None:
-					return (existing & ~DEFAULT_STYLE) | NONE_STYLE;
+					return existing | NSWindowStyle.Borderless;
+				case WindowStyle.Utility:
+					return existing | NSWindowStyle.Utility | NSWindowStyle.Titled;
 				default:
 					throw new NotSupportedException();
 			}
