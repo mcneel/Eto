@@ -6,7 +6,19 @@
             "type": "coreclr",
 			"request": "launch",
 			"preLaunchTask": "build-mac64",
-            "program": "${workspaceFolder}/artifacts/test/Debug/netcoreapp3.1/Eto.Test.Mac64.app/Contents/MacOS/Eto.Test.Mac64",
+            "program": "${workspaceFolder}/artifacts/test/${config:var.configuration}/netcoreapp3.1/Eto.Test.Mac64.app/Contents/MacOS/Eto.Test.Mac64",
+            "args": [],
+            "console": "internalConsole",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+			// requires mono extension from https://github.com/cwensley/vscode-mono-debug/releases
+            "name": "Eto.Test.XamMac2",
+            "type": "mono",
+			"request": "launch",
+			"preLaunchTask": "build-xammac2",
+			"program": "${workspaceFolder}/artifacts/test/${config:var.configuration}/net461/Eto.Test.XamMac2.app/Contents/MacOS/Eto.Test.XamMac2",
+			"useRuntime": false,
             "args": [],
             "console": "internalConsole",
             "internalConsoleOptions": "openOnSessionStart"
@@ -16,7 +28,7 @@
 			"type": "coreclr",
 			"request": "launch",
 			"preLaunchTask": "build-gtk",
-            "program": "${workspaceFolder}/artifacts/test/Debug/netcoreapp3.1/Eto.Test.Gtk.dll",
+            "program": "${workspaceFolder}/artifacts/test/${config:var.configuration}/netcoreapp3.1/Eto.Test.Gtk.dll",
             "args": [],
             "console": "internalConsole",
             "stopAtEntry": false,
@@ -27,10 +39,20 @@
 			"type": "coreclr",
 			"request": "launch",
 			"preLaunchTask": "build-wpf",
-            "program": "${workspaceFolder}/artifacts/test/Debug/netcoreapp3.1/Eto.Test.Wpf.exe",
+            "program": "${workspaceFolder}/artifacts/test/${config:var.configuration}/netcoreapp3.1/Eto.Test.Wpf.exe",
             "args": [],
             "console": "internalConsole",
             "internalConsoleOptions": "openOnSessionStart"
         },
+        {
+            "name": "Eto.Test.WinForms",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "build-winforms",
+            "program": "${workspaceFolder}/artifacts/test/${config:var.configuration}/netcoreapp3.1/Eto.Test.WinForms.exe",
+            "args": [],
+            "console": "internalConsole",
+            "internalConsoleOptions": "openOnSessionStart"
+        }
 	]
 }

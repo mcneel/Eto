@@ -214,6 +214,10 @@ namespace Eto.GtkSharp.Forms
 						case WindowStyle.None:
 							Control.Decorated = false;
 							break;
+						case WindowStyle.Utility:
+							Control.Decorated = true;
+							Control.TypeHint = Gdk.WindowTypeHint.Utility;
+							break;
 						default:
 							throw new NotSupportedException();
 					}
@@ -299,6 +303,8 @@ namespace Eto.GtkSharp.Forms
 			HandleEvent(Window.LocationChangedEvent); // for RestoreBounds
 			Control.SetSizeRequest(-1, -1);
 			Control.Realized += Connector.Control_Realized;
+
+			ApplicationHandler.Instance.RegisterIsActiveChanged(Control);
 		}
 
 		public override void AttachEvent(string id)
@@ -668,8 +674,13 @@ namespace Eto.GtkSharp.Forms
 				var gdkWindow = Control.GetWindow();
 				if (screen != null && gdkWindow != null)
 				{
+#if GTKCORE
+					var monitor = screen.Display.GetMonitorAtWindow(gdkWindow);
+					return new Screen(new ScreenHandler(monitor));
+#else
 					var monitor = screen.GetMonitorAtWindow(gdkWindow);
 					return new Screen(new ScreenHandler(screen, monitor));
+#endif
 				}
 				return null;
 			}
