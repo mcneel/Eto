@@ -91,12 +91,12 @@ namespace Eto.GtkSharp.Forms.Controls
 				if (!GraphicsHandler.GetClipRectangle(args.Cr, ref rect))
 					rect = new Gdk.Rectangle(Gdk.Point.Zero, allocation);
 
-				using (var graphics = new Graphics(new GraphicsHandler(args.Cr, h.Control.CreatePangoContext(), false)))
+				using (var graphics = new Graphics(new GraphicsHandler(args.Cr, h.Control.PangoContext, false)))
 				{
 					if (h.SelectedBackgroundColor != null)
 						graphics.Clear(h.SelectedBackgroundColor.Value);
 					
-					h.Callback.OnPaint(h.Widget, new PaintEventArgs (graphics, rect.ToEto()));
+					h.Callback.OnPaint(h.Widget, new PaintEventArgs(graphics, rect.ToEto()));
 				}
 			}
 #endif
