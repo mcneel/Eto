@@ -18,9 +18,11 @@ namespace Eto
 {
 	static partial class Win32
 	{
+		static Lazy<bool> perMonitorThreadDpiSupported = new Lazy<bool>(() => MethodExists("User32.dll", "SetThreadDpiAwarenessContext"));
 		static Lazy<bool> perMonitorDpiSupported = new Lazy<bool>(() => MethodExists("shcore.dll", "SetProcessDpiAwareness"));
 		static Lazy<bool> monitorDpiSupported = new Lazy<bool>(() => MethodExists("shcore.dll", "GetDpiForMonitor"));
 
+		public static bool PerMontiorThreadDpiSupported => perMonitorThreadDpiSupported.Value;
 		public static bool PerMonitorDpiSupported => perMonitorDpiSupported.Value;
 
 		public static bool MonitorDpiSupported => monitorDpiSupported.Value;
@@ -127,18 +129,10 @@ namespace Eto
 				if (!PerMonitorDpiSupported)
 					return screen.Bounds;
 
-				var oldDpiAwareness = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT.PER_MONITOR_AWARE_v2);
-
-				var hmonitor = MonitorFromPoint(screen.Bounds.Location, 0);
 				var info = new MONITORINFOEX();
-				GetMonitorInfo(new HandleRef(null, hmonitor), info);
+				GetMonitorInfo(screen, ref info);
 
-				//var bounds = screen.Bounds;
-				var bounds = info.rcMonitor.ToSD();
-
-				if (oldDpiAwareness != DPI_AWARENESS_CONTEXT.NONE)
-					SetThreadDpiAwarenessContext(oldDpiAwareness);
-				return bounds;
+				return info.rcMonitor.ToSD();
 			}
 
 			public sd.Rectangle GetWorkingArea(swf.Screen screen)
@@ -146,31 +140,12 @@ namespace Eto
 				if (!PerMonitorDpiSupported)
 					return screen.WorkingArea;
 
-				var oldDpiAwareness = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT.PER_MONITOR_AWARE_v2);
-
-				var hmonitor = MonitorFromPoint(screen.Bounds.Location, 0);
 				var info = new MONITORINFOEX();
-				GetMonitorInfo(new HandleRef(null, hmonitor), info);
-
-				// var bounds = screen.WorkingArea;
-				var bounds = info.rcWork.ToSD();
-
-				if (oldDpiAwareness != DPI_AWARENESS_CONTEXT.NONE)
-					SetThreadDpiAwarenessContext(oldDpiAwareness);
-				return bounds;
+				GetMonitorInfo(screen, ref info);
+				
+				return info.rcWork.ToSD();
 			}
 
-			DPI_AWARENESS_CONTEXT? processDpiAwareness;
-
-			public DPI_AWARENESS_CONTEXT ProcessDpiAwareness
-			{
-				get
-				{
-					if (processDpiAwareness == null)
-						processDpiAwareness = GetThreadDpiAwarenessContext();
-					return processDpiAwareness.Value;
-				}
-			}
 
 			public override float GetLogicalPixelSize(swf.Screen screen)
 			{
@@ -183,16 +158,16 @@ namespace Eto
 						return (uint)graphics.DpiY / 96f;
 					}
 				}
-				// use per-monitor aware dpi awareness to get ACTUAL dpi here
-				var oldDpiAwareness = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT.PER_MONITOR_AWARE_v2);
+				var mon = MonitorFromPoint(screen.Bounds.Location, MONITOR.DEFAULTTONEAREST);
 
-				var pnt = new System.Drawing.Point(screen.Bounds.Left + 1, screen.Bounds.Top + 1);
-				var mon = MonitorFromPoint(pnt, MONITOR.DEFAULTTONEAREST);
+				// use per-monitor aware dpi awareness to get ACTUAL dpi here
+				var oldDpiAwareness = SetThreadDpiAwarenessContextSafe(DPI_AWARENESS_CONTEXT.PER_MONITOR_AWARE_v2);
+
 				uint dpiX, dpiY;
 				GetDpiForMonitor(mon, MDT.EFFECTIVE_DPI, out dpiX, out dpiY);
 
 				if (oldDpiAwareness != DPI_AWARENESS_CONTEXT.NONE)
-					SetThreadDpiAwarenessContext(oldDpiAwareness);
+					SetThreadDpiAwarenessContextSafe(oldDpiAwareness);
 				return dpiX / 96f;
 			}
 
@@ -209,6 +184,19 @@ namespace Eto
 		public static Eto.Drawing.SizeF GetLogicalSize(this swf.Screen screen) => locationHelper.GetLogicalSize(screen);
 
 		public static float GetLogicalPixelSize(this swf.Screen screen) => locationHelper.GetLogicalPixelSize(screen);
+
+		public static void GetMonitorInfo(this swf.Screen screen, ref MONITORINFOEX info)
+		{
+			var hmonitor = MonitorFromPoint(screen.Bounds.Location, 0);
+
+			var oldDpiAwareness = SetThreadDpiAwarenessContextSafe(DPI_AWARENESS_CONTEXT.PER_MONITOR_AWARE_v2);
+
+			GetMonitorInfo(new HandleRef(null, hmonitor), info);
+
+			if (oldDpiAwareness != DPI_AWARENESS_CONTEXT.NONE)
+				SetThreadDpiAwarenessContextSafe(oldDpiAwareness);
+		}
+
 
 		[DllImport("User32.dll")]
 		public static extern IntPtr MonitorFromPoint(System.Drawing.Point pt, MONITOR dwFlags);
@@ -232,7 +220,14 @@ namespace Eto
 		public static extern uint GetProcessDpiAwareness(IntPtr handle, out PROCESS_DPI_AWARENESS awareness);
 
 		[DllImport("User32.dll")]
-		public static extern DPI_AWARENESS_CONTEXT SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT dpiContext);
+		static extern DPI_AWARENESS_CONTEXT SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT dpiContext);
+
+		public static DPI_AWARENESS_CONTEXT SetThreadDpiAwarenessContextSafe(DPI_AWARENESS_CONTEXT dpiContext)
+		{
+			if (!PerMontiorThreadDpiSupported)
+				return DPI_AWARENESS_CONTEXT.NONE;
+			return SetThreadDpiAwarenessContext(dpiContext);
+		}
 
 		[DllImport("User32.dll")]
 		public static extern DPI_AWARENESS_CONTEXT GetThreadDpiAwarenessContext();
