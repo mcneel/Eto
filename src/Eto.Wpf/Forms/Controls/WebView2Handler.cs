@@ -457,12 +457,20 @@ namespace Eto.Wpf.Forms.Controls
 				case WebView.OpenNewWindowEvent:
 					break;
 				case WebView.DocumentTitleChangedEvent:
+					Control.WebMessageReceived += Control_WebMessageReceived;
 					break;
 				default:
 					base.AttachEvent(handler);
 					break;
 			}
 
+		}
+
+		// hack
+		private void Control_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+		{
+			var args = new WebViewTitleEventArgs(e.TryGetWebMessageAsString());
+			Callback.OnDocumentTitleChanged(Widget, args);
 		}
 
 		private void Control_ContentLoading(object sender, CoreWebView2ContentLoadingEventArgs e)
@@ -495,7 +503,7 @@ namespace Eto.Wpf.Forms.Controls
 		public string ExecuteScript(string script)
 		{
 			var fullScript = string.Format("var _fn = function() {{ {0} }}; _fn();", script);
-			var task = Control.ExecuteScriptAsync(fullScript);
+			var task = Control.ExecuteScriptAsync(/*fullScript*/script);
 			while (!task.IsCompleted)
 			{
 				if (!Widget.Loaded)
