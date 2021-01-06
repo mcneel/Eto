@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ develop ]
   release:
-    types: [ released ]
+    types: [ published ]
 
 env:
   DotNetVersion: "5.0.100"
@@ -22,18 +22,6 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
-
-    # needed for dotnet-t4
-    - name: Setup .NET Core 2.1.x
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: "2.1.x"
-
-    # Can't use .NET 5 with msbuild until VS is updated to 16.8 in GitHub Actions
-    - name: Setup .NET Core 3.1.x
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: "3.1.x"
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
