@@ -516,6 +516,9 @@ namespace Eto.GtkSharp.Forms
 			[GLib.ConnectBefore]
 			public void HandleControlLeaveNotifyEvent(object o, Gtk.LeaveNotifyEventArgs args)
 			{
+				// ignore child events
+				if (args.Event.Detail == Gdk.NotifyType.Inferior)
+					return;
 				var p = new PointF((float)args.Event.X, (float)args.Event.Y);
 				Keys modifiers = args.Event.State.ToEtoKey();
 				MouseButtons buttons = MouseButtons.None;
@@ -526,6 +529,9 @@ namespace Eto.GtkSharp.Forms
 			[GLib.ConnectBefore]
 			public void HandleControlEnterNotifyEvent(object o, Gtk.EnterNotifyEventArgs args)
 			{
+				// ignore child events
+				if (args.Event.Detail == Gdk.NotifyType.Inferior)
+					return;
 				var p = new PointF((float)args.Event.X, (float)args.Event.Y);
 				Keys modifiers = args.Event.State.ToEtoKey();
 				MouseButtons buttons = MouseButtons.None;
@@ -913,6 +919,38 @@ namespace Eto.GtkSharp.Forms
 		}
 
 		public Window GetNativeParentWindow() => (Control.Toplevel as Gtk.Window).ToEtoWindow();
+
+		public SizeF GetPreferredSize(SizeF availableSize)
+		{
+			if (!ContainerControl.IsRealized)
+			{
+				ContainerControl.Realize();
+				ContainerControl.ShowAll();
+			}
+#if GTK3
+			var requestMode = ContainerControl.RequestMode;
+			var size = new Size(availableSize.Width >= float.MaxValue ? int.MaxValue : (int)availableSize.Width, availableSize.Height >= float.MaxValue ? int.MaxValue : (int)availableSize.Height);
+			if (requestMode == Gtk.SizeRequestMode.HeightForWidth)
+			{
+				ContainerControl.GetPreferredWidth(out var minimum_width, out var natural_width);
+				var width = Math.Max(minimum_width, Math.Min(size.Width, natural_width));
+				ContainerControl.GetPreferredHeightForWidth(width, out var minimum_height, out var natural_height);
+				return new SizeF(natural_width, natural_height);
+			}
+			else if (requestMode == Gtk.SizeRequestMode.WidthForHeight)
+			{
+				ContainerControl.GetPreferredHeight(out var minimum_height, out var natural_height);
+				var height = Math.Max(minimum_height, Math.Min(size.Height, natural_height));
+				ContainerControl.GetPreferredHeightForWidth(height, out var minimum_width, out var natural_width);
+				return new SizeF(natural_width, natural_height);
+			}
+			ContainerControl.GetPreferredSize(out var minimum, out var natural);
+			return new SizeF(natural.Width, natural.Height);
+#else
+			var size = ContainerControl.SizeRequest();
+			return new SizeF(size.Width, size.Height);
+#endif
+		}
 
 		class DragInfoObject
 		{
