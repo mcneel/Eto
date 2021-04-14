@@ -310,13 +310,13 @@ namespace Eto.Wpf.Forms
 			{
 				sw.SizeToContent sizing;
 				if (double.IsNaN(size.Width) && double.IsNaN(size.Height))
-					sizing = sw.SizeToContent.Manual;
+					sizing = sw.SizeToContent.WidthAndHeight;
 				else if (double.IsNaN(size.Width))
 					sizing = sw.SizeToContent.Width;
 				else if (double.IsNaN(size.Height))
 					sizing = sw.SizeToContent.Height;
 				else
-					sizing = sw.SizeToContent.WidthAndHeight;
+					sizing = sw.SizeToContent.Manual;
 
 				Control.SizeToContent = sizing;
 			}
