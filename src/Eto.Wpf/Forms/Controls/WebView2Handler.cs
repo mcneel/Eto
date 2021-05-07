@@ -374,6 +374,11 @@ namespace Eto.Wpf.Forms.Controls
 	public class WebView2Handler : BaseHandler, WebView.IHandler
 	{
 		bool webView2Ready;
+		protected bool WebView2Ready
+		{
+			get { return webView2Ready; }
+		}
+
 		List<Action> delayedActions;
 
 		public WebView2Handler()
@@ -400,6 +405,7 @@ namespace Eto.Wpf.Forms.Controls
 		void Control_CoreWebView2Ready(object sender, EventArgs e)
 		{
 			// can't actually do anything here, so execute them in the main loop
+			Console.WriteLine("Ready!====================");
 			Application.Instance.AsyncInvoke(RunDelayedActions);
 		}
 
@@ -413,6 +419,7 @@ namespace Eto.Wpf.Forms.Controls
 			{
 				for (int i = 0; i < delayedActions.Count; i++)
 				{
+					Console.WriteLine("rda==============================");
 					delayedActions[i].Invoke();
 				}
 				delayedActions = null;
@@ -431,7 +438,7 @@ namespace Eto.Wpf.Forms.Controls
 			Callback.OnDocumentTitleChanged(Widget, new WebViewTitleEventArgs(CoreWebView2.DocumentTitle));
 		}
 
-		void RunWhenReady(Action action)
+		protected void RunWhenReady(Action action)
 		{
 			if (delayedActions == null)
 			{
@@ -508,7 +515,7 @@ namespace Eto.Wpf.Forms.Controls
 
 		public async Task<string> ExecuteScriptAsync(string script)
 		{
-			var fullScript = string.Format("var _fn = function() {{ {0} }}; _fn();", script);
+			var fullScript = script; // string.Format("var _fn = function() {{ {0} }}; _fn();", script);
 			var result = await Control.ExecuteScriptAsync(fullScript);
 			return Decode(result);
 		}
@@ -560,7 +567,7 @@ namespace Eto.Wpf.Forms.Controls
 
 		}
 
-		Microsoft.Web.WebView2.Core.CoreWebView2 CoreWebView2
+		protected Microsoft.Web.WebView2.Core.CoreWebView2 CoreWebView2
 		{
 			get
 			{
