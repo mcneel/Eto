@@ -385,7 +385,8 @@ namespace Eto.Wpf.Forms.Controls
 		{
 			WebView2Loader.EnsureWebView2Runtime();
 			Control = new WebView2Control();
-			Control.CoreWebView2Ready += Control_CoreWebView2Ready;
+			//Control.CoreWebView2Ready += Control_CoreWebView2Ready;
+			Control.CoreWebView2InitializationCompleted += Control_CoreWebView2Ready;
 			InitializeAsync();
 		}
 
