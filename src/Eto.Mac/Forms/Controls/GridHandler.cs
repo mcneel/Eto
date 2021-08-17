@@ -743,6 +743,62 @@ namespace Eto.Mac.Forms.Controls
 				}
 			}
 		}
+		
+		protected virtual bool HandleMouseEvent(NSEvent theEvent)
+		{
+			var args = MacConversions.GetMouseEvent(this, theEvent, false);
+			if (theEvent.ClickCount >= 2)
+			{
+				Callback.OnMouseDoubleClick(Widget, args);
+				if (args.Handled)
+					return false;
+			}
+			else
+			{
+				Callback.OnMouseDown(Widget, args);
+				if (args.Handled)
+					return true;
+			}
+
+			var point = Control.ConvertPointFromView(theEvent.LocationInWindow, null);
+
+			var rowIndex = (int)Control.GetRow(point);
+			if (rowIndex >= 0)
+			{
+				var columnIndex = (int)Control.GetColumn(point);
+				var item = GetItem(rowIndex);
+				var column = columnIndex == -1 || columnIndex > Widget.Columns.Count ? null : Widget.Columns[columnIndex];
+				var cellArgs = MacConversions.CreateCellMouseEventArgs(column, ContainerControl, rowIndex, columnIndex, item, theEvent);
+				if (theEvent.ClickCount >= 2)
+					Callback.OnCellDoubleClick(Widget, cellArgs);
+				else
+					Callback.OnCellClick(Widget, cellArgs);
+			}
+			return false;
+		}
+		
+		protected virtual bool ValidateProposedFirstResponder(NSResponder responder, NSEvent forEvent, bool valid)
+		{
+			if (valid || responder == null || forEvent == null)
+				return valid;
+				
+			if (responder is NSView view)
+			{
+				// forward events for controls in custom cells, as long as it can't be a first responder, like a text box.
+				var parentView = view;
+				while (parentView != null && !(parentView is NSTableRowView))
+				{
+					if (parentView is CustomCellHandler.EtoCustomCellView)
+					{
+						return !view.AcceptsFirstResponder();
+					}
+					parentView = parentView.Superview;
+				};
+			}
+			
+			return false;
+		}
+		
 	}
 }
 
