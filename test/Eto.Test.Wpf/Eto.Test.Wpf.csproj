@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform(Windows))">net5.0-windows;net472</TargetFrameworks>
-    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform(Windows))">net472</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform(Windows))">net6.0-windows;net48</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform(Windows))">net48</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,7 +19,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net472'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net48'">
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -56,9 +56,8 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.12.0" />
-  	<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="all" />
-  	<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.818.41" />
+    <PackageReference Include="NUnit" Version="3.13.2" />
+  	<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1020.30" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
