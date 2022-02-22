@@ -5,6 +5,7 @@ using Eto.Drawing;
 using System.Collections.Generic;
 using System.Linq;
 using Eto.Forms;
+using System.Runtime.InteropServices;
 
 #if XAMMAC2
 using AppKit;
@@ -79,10 +80,23 @@ namespace Eto.Mac.Drawing
 				}
 			}
 
+#if XAMMAC && NET6_0_OR_GREATER
+			// .NET 6 on ARM64 crashes when using the override in macos workload preview 11, remove this when fixed.
+			[Export("CGImageForProposedRect:context:hints:")]
+			public CGImage AsCGImage(IntPtr proposedDestRectPtr, NSGraphicsContext context, NSDictionary hints)
+			{
+				var proposedDestRect = Marshal.PtrToStructure<CGRect>(proposedDestRectPtr);
+				var result = Rep.AsCGImage(ref proposedDestRect, context, hints);
+				Marshal.StructureToPtr(proposedDestRect, proposedDestRectPtr, false);
+				return result;
+			}
+#else
 			public override CGImage AsCGImage(ref CGRect proposedDestRect, NSGraphicsContext context, NSDictionary hints)
 			{
 				return Rep.AsCGImage(ref proposedDestRect, context, hints);
 			}
+#endif
+			
 
 			public override nint BitsPerSample
 			{
@@ -156,13 +170,12 @@ namespace Eto.Mac.Drawing
 				return Rep.DrawAtPoint(point);
 			}
 
-			static NSDictionary s_emptyDictionary = new NSDictionary();
-
 			public override bool DrawInRect(CGRect dstSpacePortionRect, CGRect srcSpacePortionRect, NSCompositingOperation op, nfloat requestedAlpha, bool respectContextIsFlipped, NSDictionary hints)
 			{
+#if XAMMAC
 				// bug in Xamarin.Mac, hints can't be null when calling base..
-				hints = hints ?? s_emptyDictionary;
-
+				hints = hints ?? new NSDictionary();
+#endif
 				return Rep.DrawInRect(dstSpacePortionRect, srcSpacePortionRect, op, requestedAlpha, respectContextIsFlipped, hints);
 			}
 
