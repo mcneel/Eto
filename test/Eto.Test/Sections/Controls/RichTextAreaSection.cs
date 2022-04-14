@@ -12,7 +12,7 @@ namespace Eto.Test.Sections.Controls
 	{
 		public static string RtfString = "{\\rtf1\\ansi\\ansicpg1252\\cocoartf1343\\cocoasubrtf160\r\n{\\fonttbl\\f0\\fswiss\\fcharset0 Helvetica;}\r\n{\\colortbl;\\red255\\green255\\blue255;}\r\n\\margl1440\\margr1440\\vieww10800\\viewh8400\\viewkind0\r\n\\pard\\tx566\\tx1133\\tx1700\\tx2267\\tx2834\\tx3401\\tx3968\\tx4535\\tx5102\\tx5669\\tx6236\\tx6803\\pardirnatural\r\n\r\n\\f0\\fs24 \\cf0 This is some \r\n\\b bold\r\n\\b0 , \r\n\\i italic\r\n\\i0 , and \\ul underline\\ulnone  text! \\\r\n\\\r\n\\pard\\tx566\\tx1133\\tx1700\\tx2267\\tx2834\\tx3401\\tx3968\\tx4535\\tx5102\\tx5669\\tx6236\\tx6803\\pardirnatural\\qr\r\n\\cf0 Some other text}";
 
-		static string LastText = Utility.LoremText;
+		static string LastText = Utility.LoremTextWithTwoParagraphs;
 
 		public RichTextAreaSection()
 		{
@@ -86,14 +86,6 @@ namespace Eto.Test.Sections.Controls
 			};
 
 			var typefaceDropDown = new DropDown();
-			typefaceDropDown.ItemKeyBinding = Binding.Property((FontTypeface f) => f.Name);
-			typefaceDropDown.DataStore = richText.SelectionFamily.Typefaces;
-			var tyepfaceBinding = typefaceDropDown.SelectedValueBinding.Bind(richText, r => r.SelectionTypeface);
-			typefaceDropDown.SelectedValueChanged += (sender, e) =>
-			{
-				richText.Focus();
-				UpdateBindings(BindingUpdateMode.Destination);
-			};
 
 			var familyDropDown = new DropDown();
 			familyDropDown.ItemTextBinding = Binding.Property((FontFamily f) => f.LocalizedName);
@@ -105,6 +97,15 @@ namespace Eto.Test.Sections.Controls
 				//tyepfaceBinding.Mode = DualBindingMode.Manual;
 				typefaceDropDown.DataStore = family?.Typefaces;
 				//tyepfaceBinding.Mode = DualBindingMode.TwoWay;
+				richText.Focus();
+				UpdateBindings(BindingUpdateMode.Destination);
+			};
+
+			typefaceDropDown.ItemKeyBinding = Binding.Property((FontTypeface f) => f.Name);
+			typefaceDropDown.DataStore = richText.SelectionFamily.Typefaces;
+			var tyepfaceBinding = typefaceDropDown.SelectedValueBinding.Bind(richText, r => r.SelectionTypeface);
+			typefaceDropDown.SelectedValueChanged += (sender, e) =>
+			{
 				richText.Focus();
 				UpdateBindings(BindingUpdateMode.Destination);
 			};

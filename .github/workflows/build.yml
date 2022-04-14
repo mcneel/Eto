@@ -16,7 +16,7 @@ env:
 jobs:
   build-windows:
 
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
     - uses: actions/checkout@v2
@@ -91,7 +91,7 @@ jobs:
       uses: maxim-lobanov/setup-xamarin@v1
       with:
         mono-version: latest
-        xamarin-mac-version: latest
+        xamarin-mac-version: 8.6
         xcode-version: latest
     
     - name: Import code signing certificate
