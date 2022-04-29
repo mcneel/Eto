@@ -101,6 +101,26 @@ namespace Eto.GtkSharp.Forms.Controls
 			SetSelectedRows(selected);
 			SkipSelectedChange = false;
 		}
+		
+		protected (double? hscroll, double? vscroll) SaveScrollState()
+		{
+			var hscrollbar = Control.HScrollbar as Gtk.Scrollbar;
+			var vscrollbar = Control.VScrollbar as Gtk.Scrollbar;
+			var hscroll = hscrollbar?.Value;
+			var vscroll = vscrollbar?.Value;
+			return (hscroll, vscroll);
+		}
+		
+		protected void RestoreScrollState((double? hscroll, double? vscroll) state)
+		
+		{
+			var hscrollbar = Control.HScrollbar as Gtk.Scrollbar;
+			var vscrollbar = Control.VScrollbar as Gtk.Scrollbar;
+			if (state.hscroll != null)
+				hscrollbar.Value = state.hscroll.Value;
+			if (state.vscroll != null)
+				vscrollbar.Value = state.vscroll.Value;
+		}
 
 		protected override void Initialize()
 		{
@@ -167,6 +187,9 @@ namespace Eto.GtkSharp.Forms.Controls
 				}
 
 				var handler = Handler;
+				if (handler == null)
+					return;
+					
 				if (handler.contextMenu != null && args.Event.Button == 3 && args.Event.Type == Gdk.EventType.ButtonPress)
 				{
 					var menu = ((ContextMenuHandler)handler.contextMenu.Handler).Control;
@@ -199,12 +222,15 @@ namespace Eto.GtkSharp.Forms.Controls
 
 			public void HandleGridSelectionChanged(object sender, EventArgs e)
 			{
-				if (!Handler.SkipSelectedChange)
+				var handler = Handler;
+				if (handler == null)
+					return;
+				if (!handler.SkipSelectedChange)
 				{
-					var selected = Handler.SelectedRows.ToArray();
+					var selected = handler.SelectedRows.ToArray();
 					if (!ArraysEqual(selectedRows, selected))
 					{
-						Handler.Callback.OnSelectionChanged(Handler.Widget, EventArgs.Empty);
+						handler.Callback.OnSelectionChanged(handler.Widget, EventArgs.Empty);
 						selectedRows = selected;
 					}
 				}
