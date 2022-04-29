@@ -84,7 +84,7 @@ namespace Eto.WinForms.Forms
 				{
 					if (!string.IsNullOrEmpty(badgeLabel))
 					{
-						var bmp = new sd.Bitmap(16, 16, sd.Imaging.PixelFormat.Format32bppArgb);
+						var bmp = new sd.Bitmap(14, 14, sd.Imaging.PixelFormat.Format32bppArgb);
 						using (var graphics = sd.Graphics.FromImage(bmp))
 						{
 							DrawBadgeLabel(bmp, graphics);
@@ -98,15 +98,15 @@ namespace Eto.WinForms.Forms
 				}
 			}
 		}
-
+		
 		protected virtual void DrawBadgeLabel(sd.Bitmap bmp, sd.Graphics graphics)
 		{
 			var font = new sd.Font(sd.FontFamily.GenericSansSerif, 9, sd.FontStyle.Bold, sd.GraphicsUnit.Pixel);
 
 			var size = graphics.MeasureString(badgeLabel, font, bmp.Size, sd.StringFormat.GenericTypographic);
 			graphics.SmoothingMode = sd.Drawing2D.SmoothingMode.AntiAlias;
-			graphics.FillEllipse(sd.Brushes.Red, new sd.Rectangle(0, 0, 16, 16));
-			graphics.DrawEllipse(new sd.Pen(sd.Brushes.White, 2), new sd.Rectangle(0, 0, 15, 15));
+			graphics.FillEllipse(sd.Brushes.Red, new sd.Rectangle(0, 0, bmp.Width - 1, bmp.Height - 1));
+			// graphics.DrawEllipse(new sd.Pen(sd.Brushes.White, 2), new sd.Rectangle(0, 0, 15, 15));
 			var pt = new sd.PointF((bmp.Width - size.Width - 0.5F) / 2, (bmp.Height - size.Height - 1) / 2);
 			graphics.DrawString(badgeLabel, font, sd.Brushes.White, pt, sd.StringFormat.GenericTypographic);
 		}
@@ -156,16 +156,34 @@ namespace Eto.WinForms.Forms
 				var bubble = new BubbleEventFilter();
 				bubble.AddBubbleMouseEvent((c, cb, e) => cb.OnMouseWheel(c, e), null, Win32.WM.MOUSEWHEEL);
 				bubble.AddBubbleMouseEvent((c, cb, e) => cb.OnMouseMove(c, e), null, Win32.WM.MOUSEMOVE);
-				bubble.AddBubbleMouseEvents((c, cb, e) => cb.OnMouseDown(c, e), true, Win32.WM.LBUTTONDOWN, Win32.WM.RBUTTONDOWN, Win32.WM.MBUTTONDOWN);
+				bubble.AddBubbleMouseEvents((c, cb, e) => 
+				{
+					cb.OnMouseDown(c, e);
+					if (e.Handled && c.Handler is IWindowsControl handler && handler.ShouldCaptureMouse)
+					{
+						handler.ContainerControl.Capture = true;
+						handler.MouseCaptured = true;
+					}
+				}, true, Win32.WM.LBUTTONDOWN, Win32.WM.RBUTTONDOWN, Win32.WM.MBUTTONDOWN);
 				bubble.AddBubbleMouseEvents((c, cb, e) =>
 				{
 					cb.OnMouseDoubleClick(c, e);
 					if (!e.Handled)
 						cb.OnMouseDown(c, e);
 				}, null, Win32.WM.LBUTTONDBLCLK, Win32.WM.RBUTTONDBLCLK, Win32.WM.MBUTTONDBLCLK);
-				bubble.AddBubbleMouseEvent((c, cb, e) => cb.OnMouseUp(c, e), false, Win32.WM.LBUTTONUP, b => MouseButtons.Primary);
-				bubble.AddBubbleMouseEvent((c, cb, e) => cb.OnMouseUp(c, e), false, Win32.WM.RBUTTONUP, b => MouseButtons.Alternate);
-				bubble.AddBubbleMouseEvent((c, cb, e) => cb.OnMouseUp(c, e), false, Win32.WM.MBUTTONUP, b => MouseButtons.Middle);
+				void OnMouseUpHandler(Control c, Control.ICallback cb, MouseEventArgs e)
+				{
+					if (c.Handler is IWindowsControl handler && handler.MouseCaptured)
+					{
+						handler.MouseCaptured = false;
+						handler.ContainerControl.Capture = false;
+					}
+					cb.OnMouseUp(c, e);
+				}
+				
+				bubble.AddBubbleMouseEvent(OnMouseUpHandler, false, Win32.WM.LBUTTONUP, b => MouseButtons.Primary);
+				bubble.AddBubbleMouseEvent(OnMouseUpHandler, false, Win32.WM.RBUTTONUP, b => MouseButtons.Alternate);
+				bubble.AddBubbleMouseEvent(OnMouseUpHandler, false, Win32.WM.MBUTTONUP, b => MouseButtons.Middle);
 				swf.Application.AddMessageFilter(bubble);
 			}
 			if (BubbleKeyEvents)
