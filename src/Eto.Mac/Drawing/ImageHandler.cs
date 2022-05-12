@@ -1,35 +1,7 @@
 using Eto.Drawing;
 using Eto.Mac.Forms;
 
-#if XAMMAC2
-using AppKit;
-using Foundation;
-using CoreGraphics;
-using ObjCRuntime;
-using CoreAnimation;
-using CoreImage;
-#else
-using MonoMac.AppKit;
-using MonoMac.Foundation;
-using MonoMac.CoreGraphics;
-using MonoMac.ObjCRuntime;
-using MonoMac.CoreAnimation;
-using MonoMac.CoreImage;
-#if Mac64
-using nfloat = System.Double;
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else
-using nfloat = System.Single;
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif
-#if SDCOMPAT
-using CGSize = System.Drawing.SizeF;
-using CGRect = System.Drawing.RectangleF;
-using CGPoint = System.Drawing.PointF;
-#endif
-#endif
+
 
 namespace Eto.Mac.Drawing
 {
@@ -75,7 +47,9 @@ namespace Eto.Mac.Drawing
 			var ctx = graphics.Control;
 			ctx.SaveState();
 
-			if (graphics.GraphicsContext.IsFlipped)
+			var image = GetImage();
+
+			if (!image.Flipped)
 			{
 				// draw flipped
 				ctx.ConcatCTM(new CGAffineTransform(1, 0, 0, -1, 0, graphics.ViewHeight));
@@ -96,7 +70,7 @@ namespace Eto.Mac.Drawing
 			}
 
 			var destRect = destination.ToNS();
-			var cgImage = GetImage().AsCGImage(ref destRect, graphics.GraphicsContext, null);
+			var cgImage = image.AsCGImage(ref destRect, graphics.GraphicsContext, null);
 
 			// clip to the image as a mask, using only alpha channel
 			ctx.ClipToMask(destMask.ToNS(), cgImage);
