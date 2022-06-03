@@ -32,21 +32,10 @@ namespace Eto.Mac.Forms
 
 		protected override NSWindowLevel TopmostWindowLevel => NSWindowLevel.Floating;
 
-		public override void SetOwner(Window owner)
-		{
-			base.SetOwner(owner);
-
-			// When this is true, the NSPanel would hide the panel and owner if they aren't key.
-			// So, only hide on deactivate if it is an ownerless form.
-			Control.HidesOnDeactivate = owner == null;
-
-			SetLevelAdjustment();
-		}
-
 		void SetLevelAdjustment()
 		{
 			// only need to adjust level when window style is not utility and we actually want it to be topmost (default for FloatingForm).
-			var wantsTopmost = Widget.Properties.Get<bool>(Topmost_Key, true);
+			var wantsTopmost = WantsTopmost;
 			var owner = Widget.Owner;
 			var needsLevelAdjust = wantsTopmost && WindowStyle != WindowStyle.Utility && owner != null;
 
@@ -76,12 +65,16 @@ namespace Eto.Mac.Forms
 				{
 					lastOwner.GotFocus -= Owner_GotFocus;
 					lastOwner.LostFocus -= Owner_LostFocus;
+					Widget.GotFocus -= Owner_GotFocus;
+					Widget.LostFocus -= Owner_LostFocus;
 					Widget.Closed -= Widget_Closed;
 				}
 				if (owner != null)
 				{
 					owner.GotFocus += Owner_GotFocus;
 					owner.LostFocus += Owner_LostFocus;
+					Widget.GotFocus += Owner_GotFocus;
+					Widget.LostFocus += Owner_LostFocus;
 					Widget.Closed += Widget_Closed;
 				}
 			}
@@ -98,10 +91,12 @@ namespace Eto.Mac.Forms
 				// when closed we need to disconnect from owner to prevent leaks
 				lastOwner.GotFocus -= Owner_GotFocus;
 				lastOwner.LostFocus -= Owner_LostFocus;
+				Widget.GotFocus -= Owner_GotFocus;
+				Widget.LostFocus -= Owner_LostFocus;
 			}
 		}
 
-		static readonly object Topmost_Key = new object();
+		internal override bool DefaultTopmost => true;
 
 		public override bool Topmost
 		{
@@ -109,8 +104,6 @@ namespace Eto.Mac.Forms
 			set
 			{
 				base.Topmost = value;
-				// need to remember the preferred state as it can be changed on us when setting the owner
-				Widget.Properties.Set(Topmost_Key, value, true);
 				SetLevelAdjustment();
 			}
 		}
@@ -130,14 +123,23 @@ namespace Eto.Mac.Forms
 		void SetAsTopmost()
 		{
 			Control.Level = TopmostWindowLevel;
-			Control.HidesOnDeactivate = true;
+
+			// When this is true, the NSPanel would hide the panel and owner if they aren't key.
+			// So, only hide on deactivate if it is an ownerless form.
+			Control.HidesOnDeactivate = Widget.Owner == null;
 		}
 
 		private void Owner_LostFocus(object sender, EventArgs e)
 		{
+			if (HasFocus || Widget.Owner.HasFocus)
+				return;
 			Control.Level = NSWindowLevel.Normal;
+			
+			// Window will still be topmost until we order the window explicitly.
+			// If there are multiple app windows, we use this instead of OrderFront otherwise 
+			// the original parent window steals focus again.
 			if (Control.IsVisible)
-				Control.OrderFront(Control);
+				Control.OrderWindow(NSWindowOrderingMode.Above, Control.ParentWindow?.WindowNumber ?? 0);
 		}
 
 		protected override NSPanel CreateControl()
@@ -151,6 +153,12 @@ namespace Eto.Mac.Forms
 			panel.BecomesKeyOnlyIfNeeded = true;
 
 			return panel;
+		}
+
+		internal override void OnSetAsChildWindow()
+		{
+			// Don't call base, we do our own window level logic for FloatingForm.
+			SetLevelAdjustment();
 		}
 	}
 }
