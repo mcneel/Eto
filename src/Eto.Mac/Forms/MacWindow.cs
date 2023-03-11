@@ -16,7 +16,7 @@ namespace Eto.Mac.Forms
 
 		public IMacWindow Handler { get { return (IMacWindow)WeakHandler.Target; } set { WeakHandler = new WeakReference(value); } }
 		
-		public EtoWindow(IntPtr handle)
+		public EtoWindow(NativeHandle handle)
 			: base(handle)
 		{
 		}

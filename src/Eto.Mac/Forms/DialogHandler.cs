@@ -38,7 +38,7 @@ namespace Eto.Mac.Forms
 				set { base.Handler = value; }
 			}
 			
-			public EtoDialogWindow(IntPtr handle)
+			public EtoDialogWindow(NativeHandle handle)
 				: base(handle)
 			{
 			}
