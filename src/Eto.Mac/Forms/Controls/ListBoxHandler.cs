@@ -69,8 +69,11 @@ namespace Eto.Mac.Forms.Controls
 
 			public override NSObject GetObjectValue(NSTableView tableView, NSTableColumn tableColumn, nint row)
 			{
-				var w = Handler.Widget;
-				var item = Handler.collection.ElementAt((int)row);
+				var h = Handler;
+				if (h == null)
+					return null;
+				var w = h.Widget;
+				var item = h.collection.ElementAt((int)row);
 				return new MacImageData
 				{
 					Text = new NSString(Convert.ToString(w.ItemTextBinding.GetValue(item))),
@@ -80,7 +83,10 @@ namespace Eto.Mac.Forms.Controls
 
 			public override nint GetRowCount(NSTableView tableView)
 			{
-				return Handler.collection.Collection == null ? 0 : Handler.collection.Collection.Count();
+				var h = Handler;
+				if (h == null)
+					return 0;
+				return h.collection.Collection == null ? 0 : h.collection.Collection.Count();
 			}
 		}
 
