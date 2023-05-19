@@ -10,9 +10,6 @@ namespace Eto.Wpf.Forms.ToolBar
 {
 	public class DropDownToolItemHandler : ToolItemHandler<swc.Menu, DropDownToolItem>, DropDownToolItem.IHandler
 	{
-		Image image;
-		readonly swc.Image swcImage;
-		readonly swc.TextBlock label;
 		readonly swc.MenuItem root;
 		readonly sw.Shapes.Path arrow;
 
@@ -20,18 +17,20 @@ namespace Eto.Wpf.Forms.ToolBar
 		{
 			root = new swc.MenuItem();
 			Control = new swc.Menu();
+			Control.Background = swm.Brushes.Transparent;
 			Control.Items.Add(root);
-			swcImage = new swc.Image { MaxHeight = 16, MaxWidth = 16 };
-			label = new swc.TextBlock();
-			arrow = new sw.Shapes.Path { Data = swm.Geometry.Parse("M 0 0 L 3 3 L 6 0 Z"), VerticalAlignment = sw.VerticalAlignment.Center, Margin = new Thickness(8, 2, 0, 0), Fill = swm.Brushes.Black };
-			var panel = new swc.StackPanel { Orientation = swc.Orientation.Horizontal, Children = { swcImage, label, arrow } };
+			arrow = new sw.Shapes.Path { Data = swm.Geometry.Parse("M 0 0 L 3 3 L 6 0 Z"), VerticalAlignment = sw.VerticalAlignment.Center, Margin = new Thickness(2, 2, 0, 0), Fill = swm.Brushes.Black };
 
-			root.Header = panel;
 			root.Click += Control_Click;
 			root.SubmenuOpened += Control_Click;
-			sw.Automation.AutomationProperties.SetLabeledBy(Control, label);
 		}
-		
+
+		protected override void Initialize()
+		{
+			base.Initialize();
+			root.Header = CreateContent(arrow);
+		}
+
 		private void Control_Click(object sender, RoutedEventArgs e)
 		{
 			// WPF raises this event for all child items as well as the root menu, so check sender
@@ -41,36 +40,10 @@ namespace Eto.Wpf.Forms.ToolBar
 			Widget.OnClick(EventArgs.Empty);
 		}
 
-		public override string Text
-		{
-			get { return label.Text.ToEtoMnemonic(); }
-			set { label.Text = value.ToPlatformMnemonic(); }
-		}
-
 		public override string ToolTip
 		{
 			get { return Control.ToolTip as string; }
 			set { Control.ToolTip = value; }
-		}
-
-		public override Image Image
-		{
-			get { return image; }
-			set
-			{
-				image = value;
-				swcImage.Source = image.ToWpf(Screen.PrimaryScreen.LogicalPixelSize, swcImage.GetMaxSize().ToEtoSize());
-			}
-		}
-
-		public override bool Enabled
-		{
-			get { return Control.IsEnabled; }
-			set
-			{
-				Control.IsEnabled = value;
-				swcImage.IsEnabled = value;
-			}
 		}
 
 		/// <summary>
