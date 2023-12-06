@@ -272,7 +272,8 @@ namespace Eto.WinForms.Forms
 			if (childControl.Parent == Control)
 			{
 				var pos = Control.GetCellPosition(childControl);
-				views[pos.Column, pos.Row] = null;
+				if (views != null && ReferenceEquals(views[pos.Column, pos.Row], child))
+					views[pos.Column, pos.Row] = null;
 				childControl.Parent = null;
 				SetEmptyCell(pos.Column, pos.Row);
 			}
