@@ -723,6 +723,8 @@ namespace Eto.GtkSharp.Forms
 									Control.Unfullscreen();
 								if (gdkWindow.State.HasFlag(Gdk.WindowState.Iconified))
 									Control.Deiconify();
+								if (gdkWindow.State.HasFlag(Gdk.WindowState.Iconified))
+									Control.Present();
 							}
 							Control.Maximize();
 							break;
@@ -738,6 +740,8 @@ namespace Eto.GtkSharp.Forms
 									Control.Unmaximize();
 								if (gdkWindow.State.HasFlag(Gdk.WindowState.Iconified))
 									Control.Deiconify();
+								if (gdkWindow.State.HasFlag(Gdk.WindowState.Iconified))
+									Control.Present();
 							}
 							break;
 					}
@@ -781,17 +785,22 @@ namespace Eto.GtkSharp.Forms
 			}
 		}
 
+		protected override void GrabFocus() => Control.Present();
+
 		public void BringToFront()
 		{
-			Control.Present();
+			if (WindowState == WindowState.Minimized)
+			{
+				Control.Deiconify();
+				// if it didn't work, present it
+				if (WindowState == WindowState.Minimized)
+					Control.Present();
+			}
+			
+			Control.GetWindow()?.Raise();
 		}
 
-		public void SendToBack()
-		{
-			var gdkWindow = Control.GetWindow();
-			if (gdkWindow != null)
-				gdkWindow.Lower();
-		}
+		public void SendToBack() => Control.GetWindow()?.Lower();
 
 		public virtual void SetOwner(Window owner)
 		{

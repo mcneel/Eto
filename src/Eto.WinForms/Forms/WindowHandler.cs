@@ -547,13 +547,33 @@ namespace Eto.WinForms.Forms
 
 		public virtual void BringToFront()
 		{
-			if (Control.WindowState == swf.FormWindowState.Minimized)
-				Control.WindowState = swf.FormWindowState.Normal;
-			Control.BringToFront();
-			Control.Activate();
+			RestoreFromMinimized();
+
+			var hWnd = NativeHandle;
+			if (hWnd != IntPtr.Zero)
+				Win32.SetWindowPos(hWnd, Win32.HWND_TOP, 0, 0, 0, 0, Win32.SWP.NOSIZE | Win32.SWP.NOMOVE | Win32.SWP.NOACTIVATE);
 		}
 
 		public void SendToBack() => Control.SendToBack();
+
+		public override void Focus()
+		{
+			RestoreFromMinimized();
+
+			base.Focus();
+		}
+
+		private void RestoreFromMinimized()
+		{
+			if (Control.WindowState == swf.FormWindowState.Minimized)
+			{
+				var placement = new Win32.WINDOWPLACEMENT();
+				if (Win32.GetWindowPlacement(NativeHandle, ref placement) && placement.flags.HasFlag(Win32.WPF.RESTORETOMAXIMIZED))
+					Control.WindowState = swf.FormWindowState.Maximized;
+				else
+					Control.WindowState = swf.FormWindowState.Normal;
+			}
+		}
 
 		public virtual void SetOwner(Window owner)
 		{
