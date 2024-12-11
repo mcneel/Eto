@@ -309,6 +309,11 @@ namespace Eto.GtkSharp.Drawing
 			Control.Restore();
 		}
 
+		public void DrawArc(Pen pen, float x, float y, float width, float height, double rotationAngle, bool isLargeArc, bool clockwise)
+		{
+			throw new NotImplementedException("Callum wasn't clever enough to impliment this");
+		}
+
 		public void FillPie(Brush brush, float x, float y, float width, float height, float startAngle, float sweepAngle)
 		{
 			SetOffset(true);

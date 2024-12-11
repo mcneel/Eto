@@ -218,6 +218,28 @@ namespace Eto.Wpf.Drawing
 			}
 		}
 
+		public void DrawArc(Pen pen, float x, float y, float width, float height, double rotationAngle, bool isLargeArc, bool clockwise)
+		{
+			SetOffset(false);
+			if (rotationAngle >= 360f)
+				DrawEllipse(pen, x, y, width, height);
+			else
+			{
+				var streamGeom = new swm.StreamGeometry();
+				using (var ctx = streamGeom.Open())
+				{
+					var sweepDirection = clockwise ? swm.SweepDirection.Counterclockwise : swm.SweepDirection.Clockwise;
+
+					ctx.BeginFigure(new sw.Point(x, y), true, false);
+					ctx.ArcTo(new sw.Point(x, y), new sw.Size(x + width, y + height), rotationAngle, isLargeArc, sweepDirection, true, false);
+				}
+				
+				var arc = streamGeom;
+				Control.DrawGeometry(null, pen.ToWpf(true), arc);
+			}
+
+		}
+
 		public void FillPie(Brush brush, float x, float y, float width, float height, float startAngle, float sweepAngle)
 		{
 			SetOffset(true);

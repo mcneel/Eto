@@ -387,6 +387,20 @@ namespace Eto.iOS.Drawing
 			EndDrawing();
 		}
 
+		public void DrawArc(Pen pen, float x, float y, float width, float height, double rotationAngle, bool isLargeArc, bool clockwise)
+		{
+			SetOffset(false);
+			StartDrawing();
+
+			pen.Apply(this);
+			
+
+			pen.Finish(this);
+			EndDrawing();
+
+			throw new NotImplementedException("Callum wasn't quite clever enough to impliment this");
+		}
+
 		public void FillPie(Brush brush, float x, float y, float width, float height, float startAngle, float sweepAngle)
 		{
 			SetOffset(true);

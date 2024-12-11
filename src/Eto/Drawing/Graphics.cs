@@ -390,6 +390,14 @@ public class Graphics : Widget
 	}
 
 	/// <summary>
+	/// Draws an arc with the specified <paramref name="pen"/>
+	/// </summary>
+	public void DrawArc(Pen pen, float x, float y, float width, float height, double rotationAngle, bool isLargeArc, bool clockwise)
+	{
+		Handler.DrawArc(pen, x, y, width, height, rotationAngle, isLargeArc, clockwise);
+	}
+
+	/// <summary>
 	/// Fills a pie with the specified <paramref name="color"/>
 	/// </summary>
 	/// <param name="color">Fill color</param>
@@ -1209,6 +1217,11 @@ public class Graphics : Widget
 		/// <param name="startAngle">Elliptical (skewed) angle in degrees from the x-axis to the starting point of the arc</param>
 		/// <param name="sweepAngle">Angle in degrees from the <paramref name="startAngle"/> to the ending point of the arc</param>
 		void DrawArc(Pen pen, float x, float y, float width, float height, float startAngle, float sweepAngle);
+
+		/// <summary>
+		/// Draws an arc with the specified <paramref name="pen"/>
+		/// </summary>
+		void DrawArc(Pen pen, float x, float y, float width, float height, double rotationAngle, bool isLargeArc, bool clockwise);
 
 		/// <summary>
 		/// Fills a pie with the specified <paramref name="brush"/>
