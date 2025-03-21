@@ -5,6 +5,7 @@ public class FloatingFormHandler : FormHandler, FloatingForm.IHandler
 	static readonly object Visible_Key = new object();
 	
 	bool _wasActive;
+	bool _wasClosed;
 
 	protected override void Initialize()
 	{
@@ -14,6 +15,7 @@ public class FloatingFormHandler : FormHandler, FloatingForm.IHandler
 		Minimizable = false;
 		ShowInTaskbar = false;
 		Topmost = true;
+		Control.Closed += (o, a) => _wasClosed = true;
 	}
 
 	public override void OnLoad(EventArgs e)
@@ -57,7 +59,7 @@ public class FloatingFormHandler : FormHandler, FloatingForm.IHandler
 		var isVisible = Application.Instance.IsActive && Visible;
 		if (isVisible == currentlyVisible)
 			return;
-			
+
 		if (!isVisible)
 		{
 			if (currentlyVisible)
@@ -66,14 +68,16 @@ public class FloatingFormHandler : FormHandler, FloatingForm.IHandler
 			}
 			base.Visible = isVisible;
 		}
-		else if (setActive)
+		else if (setActive && !_wasClosed)
 		{
 			var oldShowActivated = Control.ShowActivated;
 			Control.ShowActivated = _wasActive;
 			base.Visible = isVisible;
 			Control.ShowActivated = oldShowActivated;
 		}
-		else
+		else if (!_wasClosed)
+		{
 			base.Visible = isVisible;
+		}
 	}
 }
