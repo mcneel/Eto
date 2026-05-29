@@ -30,7 +30,7 @@ namespace Eto.Wpf
 
 			Style.Add<ThemedSegmentedButtonHandler>(null, h =>
 			{
-				h.Widget.Items.CollectionChanged += (sender, e) =>
+				void UpdateEtoModifiers()
 				{
 					var count = h.Widget.Items.Count;
 					for (int i = 0; i < count; i++)
@@ -55,7 +55,105 @@ namespace Eto.Wpf
 									native.ClearValue(WpfProperties.EtoModifierProperty);
 							}
 						}
+					}
+				}
 
+				void UpdatePadding(sw.FrameworkElement wpfPanel)
+				{
+					var count = h.Widget.Items.Count;
+					if (count == 0) return;
+
+					// Navigate: Panel border → TableLayout border → EtoGrid
+					swc.Grid grid = null;
+					swc.Border panelBorder = null, tableBorder = null;
+					if (wpfPanel is swc.Border pb && pb.Child is swc.Border tb && tb.Child is swc.Grid g)
+					{
+						grid = g;
+						panelBorder = pb;
+						tableBorder = tb;
+					}
+					if (grid == null || grid.ColumnDefinitions.Count < count) return;
+
+					// Use wpfPanel.ActualWidth minus border thicknesses and padding: grid.ActualWidth
+					// is stale when shrinking because pixel columns prevent the grid from contracting.
+					// Subtract both BorderThickness and Padding from each border level so available
+					// exactly matches what the grid can use.
+					var available = wpfPanel.ActualWidth;
+					if (panelBorder != null)
+					{
+						available -= panelBorder.BorderThickness.Left + panelBorder.BorderThickness.Right;
+						available -= panelBorder.Padding.Left + panelBorder.Padding.Right;
+					}
+					if (tableBorder != null)
+					{
+						available -= tableBorder.BorderThickness.Left + tableBorder.BorderThickness.Right;
+						available -= tableBorder.Padding.Left + tableBorder.Padding.Right;
+					}
+					if (available <= 0) return;
+
+					var spacing = h.Spacing;
+					var naturals = new double[count];
+					double totalNatural = 0;
+
+					for (int i = 0; i < count; i++)
+					{
+						if (h.Widget.Items[i].ControlObject is Control ctrl)
+						{
+							var native = ctrl.ToNative();
+							if (native != null)
+							{
+								native.Margin = new sw.Thickness(0);
+								native.Measure(new sw.Size(double.PositiveInfinity, double.PositiveInfinity));
+								naturals[i] = native.DesiredSize.Width;
+								totalNatural += naturals[i];
+							}
+						}
+					}
+
+					var extraSpace = available - totalNatural - (count - 1) * spacing;
+					var padding = extraSpace > 0 ? extraSpace / (2.0 * count) : 0;
+
+					var widths = new double[count];
+					double assigned = 0;
+					for (int i = 0; i < count; i++)
+					{
+						// Below natural width: stick to natural size rather than collapsing.
+						widths[i] = extraSpace > 0 ? Math.Floor(naturals[i] + 2 * padding) : naturals[i];
+						assigned += widths[i];
+					}
+
+					if (extraSpace > 0)
+					{
+						// Floor each column; split the sub-pixel remainder between first (left) and last (right)
+						var remainder = available - assigned;
+						widths[0] += Math.Floor(remainder / 2.0);
+						widths[count - 1] += remainder - Math.Floor(remainder / 2.0);
+					}
+
+					for (int i = 0; i < count; i++)
+						grid.ColumnDefinitions[i].Width = new sw.GridLength(widths[i], sw.GridUnitType.Pixel);
+				}
+
+				h.Widget.Items.CollectionChanged += (sender, e) =>
+				{
+					UpdateEtoModifiers();
+					if (h.Control.ToNative() is sw.FrameworkElement panel)
+						panel.Dispatcher.BeginInvoke(
+							System.Windows.Threading.DispatcherPriority.Loaded,
+							new Action(() => UpdatePadding(panel)));
+				};
+
+				bool sizeChangedHooked = false;
+				h.Widget.LoadComplete += (sender, e) =>
+				{
+					if (h.Control.ToNative() is sw.FrameworkElement wpfPanel)
+					{
+						UpdatePadding(wpfPanel);
+						if (!sizeChangedHooked)
+						{
+							sizeChangedHooked = true;
+							wpfPanel.SizeChanged += (s, args) => UpdatePadding(wpfPanel);
+						}
 					}
 				};
 			});

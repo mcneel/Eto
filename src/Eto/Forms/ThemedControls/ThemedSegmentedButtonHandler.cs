@@ -486,7 +486,11 @@ public class ThemedSegmentedButtonHandler : ThemedControlHandler<Panel, Segmente
 					Spacing = new Size(Spacing, 0),
 					Rows = { new TableRow(Widget.Items.Select(GetCell)) }
 				};
-				Control.Content = TableLayout.AutoSized(buttonTable, centered: true);
+
+				if (Platform.Instance.IsWpf)
+					Control.Content = buttonTable;
+				else
+					Control.Content = TableLayout.AutoSized(buttonTable, centered: true);
 			}
 			else
 				Control.Content = null;
