@@ -102,9 +102,8 @@ namespace Eto.Wpf
 							var native = ctrl.ToNative();
 							if (native != null)
 							{
-								native.Margin = new sw.Thickness(0);
 								native.Measure(new sw.Size(double.PositiveInfinity, double.PositiveInfinity));
-								naturals[i] = native.DesiredSize.Width;
+								naturals[i] = native.DesiredSize.Width - native.Margin.Left - native.Margin.Right;
 								totalNatural += naturals[i];
 							}
 						}
