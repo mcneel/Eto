@@ -438,32 +438,34 @@ namespace Eto.GtkSharp.Forms.Controls
 			}
 		}
 
+		public int GetCharacterIndex(PointF location)
+		{
+			var text = Control.Text ?? string.Empty;
+			if (text.Length == 0)
+				return 0;
+
+			Control.GetLayoutOffsets(out var layoutX, out var layoutY);
+			var x = (int)((location.X - layoutX + Control.ScrollOffset) * Pango.Scale.PangoScale);
+			var y = (int)((location.Y - layoutY) * Pango.Scale.PangoScale);
+
+			if (Control.Layout.XyToIndex(x, y, out var index, out var trailing))
+				return Control.LayoutIndexToTextIndex(index + trailing);
+
+			return location.X <= layoutX ? 0 : text.Length;
+		}
+
 		public TextAlignment TextAlignment
 		{
-			get
-			{
-				return Control.Alignment < 0.5f ? TextAlignment.Left
+			get => Control.Alignment < 0.5f ? TextAlignment.Left
 						  : Control.Alignment > 0.5f ? TextAlignment.Right
 						  : TextAlignment.Center;
-			}
-			set
+			set => Control.Alignment = value switch
 			{
-				switch (value)
-				{
-					case TextAlignment.Left:
-						Control.Alignment = 0;
-						break;
-					case TextAlignment.Center:
-						Control.Alignment = 0.5f;
-						break;
-					case TextAlignment.Right:
-						Control.Alignment = 1;
-						break;
-					default:
-						throw new NotSupportedException();
-				}
-
-			}
+				TextAlignment.Left => 0,
+				TextAlignment.Center => 0.5f,
+				TextAlignment.Right => 1,
+				_ => throw new NotSupportedException(),
+			};
 		}
 
 		public override bool ShowBorder

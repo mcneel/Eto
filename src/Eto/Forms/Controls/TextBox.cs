@@ -88,8 +88,26 @@ public class TextBox : TextControl
 	public bool ReadOnly
 	{
 		get { return Handler.ReadOnly; }
-		set { Handler.ReadOnly = value; }
+		set
+		{
+			if (Handler.ReadOnly != value)
+			{
+				Handler.ReadOnly = value;
+				OnReadOnlyChanged(EventArgs.Empty);
+			}
+		}
 	}
+
+	/// <summary>
+	/// Event to handle when the <see cref="ReadOnly"/> property changes.
+	/// </summary>
+	public event EventHandler ReadOnlyChanged;
+	
+	/// <summary>
+	/// Raises the <see cref="ReadOnlyChanged"/> event.
+	/// </summary>
+	/// <param name="e">Event arguments</param>
+	protected virtual void OnReadOnlyChanged(EventArgs e) => ReadOnlyChanged?.Invoke(this, e);
 
 	/// <summary>
 	/// Gets or sets the maximum length of the text that can be entered in the control, 0 for no limit.
@@ -231,6 +249,13 @@ public class TextBox : TextControl
 	}
 
 	/// <summary>
+	/// Gets the character index closest to the specified location.
+	/// </summary>
+	/// <param name="location">Location relative to the text box.</param>
+	/// <returns>The character index closest to <paramref name="location"/>.</returns>
+	public int GetCharacterIndex(PointF location) => Handler.GetCharacterIndex(location);
+
+	/// <summary>
 	/// Handler interface for the <see cref="TextBox"/>.
 	/// </summary>
 	public new interface IHandler : TextControl.IHandler
@@ -315,6 +340,13 @@ public class TextBox : TextControl
 		/// Gets or sets a value indicating whether to always show the selection in the text box, even if it does not have focus.
 		/// </summary>
 		bool AlwaysShowSelection { get; set; }
+
+		/// <summary>
+		/// Gets the character index closest to the specified location.
+		/// </summary>
+		/// <param name="location">Location relative to the text box.</param>
+		/// <returns>The character index closest to <paramref name="location"/>.</returns>
+		int GetCharacterIndex(PointF location);
 	}
 
 	#region Callback

@@ -5,7 +5,6 @@
     
     <!-- Prevent VS2015 from copying files from the GAC to the output folder -->
     <DoNotCopyLocalIfInGac>true</DoNotCopyLocalIfInGac>
-    <BaseIntermediateOutputPath>$(BasePath)artifacts\obj\$(OSPlatform)\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
     <Deterministic Condition="$(Deterministic) == '' and $(GenerateAssemblyVersion) == 'True'">True</Deterministic>
     <Deterministic Condition="$(Deterministic) == ''">False</Deterministic>
@@ -22,7 +21,7 @@
 
     <!-- Ignore errors/warnings about semver 2.0 when packing CI builds and lowercase aliases -->
     <NoWarn>$(NoWarn);NU5105;CS8981;NETSDK1138;SYSLIB0050;SYSLIB0051;NETSDK1202;NETSDK1135</NoWarn>
-    <LangVersion Condition="$(MSBuildProjectExtension) == '.csproj'">12</LangVersion>
+    <LangVersion Condition="$(MSBuildProjectExtension) == '.csproj'">default</LangVersion>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ValidateXcodeVersion>false</ValidateXcodeVersion>
   </PropertyGroup>
@@ -61,4 +60,8 @@
   </ItemGroup>
 
   <Import Condition="Exists('$(BasePath)..\Eto.Common.props')" Project="$(BasePath)..\Eto.Common.props" />
+  
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(BasePath)artifacts\obj\$(OSPlatform)\$(MSBuildProjectName)\</BaseIntermediateOutputPath>    
+  </PropertyGroup>
 </Project>

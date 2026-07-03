@@ -3,9 +3,10 @@ using Eto.Mac.Drawing;
 using System.Runtime.CompilerServices;
 namespace Eto.Mac.Forms
 {
-	public class ApplicationHandler : WidgetHandler<NSApplication, Application, Application.ICallback>, Application.IHandler
+	public class ApplicationHandler : MacObject<NSApplication, Application, Application.ICallback>, Application.IHandler
 	{
-		bool attached;
+		bool _attached;
+		bool? _activateOnStartup;
 
 		internal static bool QueueResizing { get; set; }
 
@@ -14,6 +15,12 @@ namespace Eto.Mac.Forms
 		public bool AddFullScreenMenuItem { get; set; }
 
 		public bool AllowClosingMainForm { get; set; }
+
+		public bool ActivateOnStartup
+		{
+			get { return _activateOnStartup ?? !_attached && Debugger.IsAttached; }
+			set { _activateOnStartup = value; }
+		}
 
 		// pointer to the initial menu so we know whether we want to keep it or not for the main form
 		internal IntPtr InitialMenu { get; set; }
@@ -133,7 +140,7 @@ namespace Eto.Mac.Forms
 			else
 				Control.InvokeOnMainThread(action);
 		}
-		
+
 		public void AsyncInvoke(Action action)
 		{
 			Control.BeginInvokeOnMainThread(action);
@@ -154,23 +161,23 @@ namespace Eto.Mac.Forms
 			Control.Delegate = oldDelegate;
 		}
 
-		static readonly IntPtr selNextEventMatchingMaskUntilDateInModeDequeue_Handle = Selector.GetHandle ("nextEventMatchingMask:untilDate:inMode:dequeue:");
-		static readonly IntPtr selSendEvent_Handle = Selector.GetHandle ("sendEvent:");
-		
+		static readonly IntPtr selNextEventMatchingMaskUntilDateInModeDequeue_Handle = Selector.GetHandle("nextEventMatchingMask:untilDate:inMode:dequeue:");
+		static readonly IntPtr selSendEvent_Handle = Selector.GetHandle("sendEvent:");
+
 		public void RunIteration()
 		{
 			MacView.InMouseTrackingLoop = false;
 			// drain the event queue only for a short period of time so it doesn't lock up
 			var date = NSDate.FromTimeIntervalSinceNow(0.001);
-			for (;;)
+			for (; ; )
 			{
 				// dequeue the event
 				var evt = Control.NextEvent(NSEventMask.AnyEvent, date, NSRunLoopMode.Default, true);
-				
+
 				// no event? cool, let's get out of here
 				if (evt == null)
 					break;
-				
+
 				// dispatch the event
 				Control.SendEvent(evt);
 			}
@@ -178,7 +185,7 @@ namespace Eto.Mac.Forms
 
 		public void Attach(object context)
 		{
-			attached = true;
+			_attached = true;
 		}
 
 		public void OnMainFormChanged()
@@ -187,7 +194,7 @@ namespace Eto.Mac.Forms
 
 		public void Run()
 		{
-			if (!attached)
+			if (!_attached)
 			{
 				if (EnableNativeCrashReport)
 					CrashReporter.Attach();
@@ -200,7 +207,7 @@ namespace Eto.Mac.Forms
 
 
 				EtoBundle.Init();
-				
+
 				EtoFontManager.Install();
 
 				if (Control.Delegate == null)
@@ -214,6 +221,11 @@ namespace Eto.Mac.Forms
 		public void Initialize(NSApplicationDelegate appdelegate)
 		{
 			AppDelegate = appdelegate;
+			if (ActivateOnStartup)
+			{
+				// if we're debugging, make the app active when it starts
+				Control.Activate();
+			}
 			Callback.OnInitialized(Widget, EventArgs.Empty);
 		}
 
@@ -231,7 +243,7 @@ namespace Eto.Mac.Forms
 
 #if Mac64
 		delegate void UncaughtExceptionHandlerDelegate(IntPtr nsexceptionPtr);
-		
+
 		[DllImport(Constants.FoundationLibrary)]
 		static extern void NSSetUncaughtExceptionHandler(UncaughtExceptionHandlerDelegate handler);
 
@@ -279,6 +291,13 @@ namespace Eto.Mac.Forms
 					NSNotificationCenter.DefaultCenter.AddObserver(NSApplication.DidBecomeActiveNotification, SharedApplication_ActiveChanged);
 					NSNotificationCenter.DefaultCenter.AddObserver(NSApplication.DidResignActiveNotification, SharedApplication_ActiveChanged);
 					break;
+				case Application.ThemeChangedEvent:
+					AddControlObserver(new NSString("effectiveAppearance"), e =>
+					{
+						if (Theme == Themes.System)
+							Callback.OnThemeChanged(Widget, EventArgs.Empty);
+					});
+					break;
 				default:
 					base.AttachEvent(id);
 					break;
@@ -324,10 +343,38 @@ namespace Eto.Mac.Forms
 			}
 		}
 
+		internal void EnsureActivated(bool showInTaskbar, bool showActivated, Icon icon)
+		{
+			if (showInTaskbar && NSApplication.SharedApplication.ActivationPolicy == NSApplicationActivationPolicy.Prohibited)
+			{
+				// use the window icon as the app icon if the app is not in the dock yet
+				if (icon != null)
+					NSApplication.SharedApplication.ApplicationIconImage = icon.ToNS();
+				
+				// ensure the dock icon is visible (so we can get a menu, etc)
+				NSApplication.SharedApplication.ActivationPolicy = NSApplicationActivationPolicy.Regular;
+
+				// make the application active so the window is shown in front of other apps
+				if (showActivated)
+					NSApplication.SharedApplication.Activate();
+			}
+		}
+
 		public Keys CommonModifier => Keys.Application;
 
 		public Keys AlternateModifier => Keys.Alt;
 
 		public bool IsActive => NSApplication.SharedApplication.Active;
+
+		Theme _currentTheme = Themes.System;
+		public Theme Theme
+		{
+			get => _currentTheme;
+			set
+			{
+				_currentTheme = value;
+				NSApplication.SharedApplication.Appearance = ThemeHandler.GetControl(value);
+			}
+		}
 	}
 }

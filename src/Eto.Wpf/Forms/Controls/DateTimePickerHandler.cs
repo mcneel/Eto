@@ -1,200 +1,327 @@
 using Eto.Wpf.Drawing;
+using Eto.Wpf.CustomControls;
+using Eto.Forms.ThemedControls;
 
 namespace Eto.Wpf.Forms.Controls
 {
-	public class DateTimePickerHandler : WpfFrameworkElement<swc.Border, DateTimePicker, DateTimePicker.ICallback>, DateTimePicker.IHandler
+	/// <summary>
+	/// A <see cref="swc.ComboBox"/> that hosts an arbitrary editable control in its selection area (<see cref="EditContent"/>)
+	/// and shows arbitrary content in its drop down popup (<see cref="DropDownContent"/>).
+	/// </summary>
+	/// <remarks>
+	/// The visual template lives in the theme resource dictionaries (themes/generic/CustomComboBox.xaml) so it follows the
+	/// active WPF theme (e.g. Fluent). This control only exposes the content hooks the template binds to.
+	/// </remarks>
+	public class EtoCustomComboBox : swc.ComboBox, IEtoWpfControl
 	{
-		xwt.DateTimePicker dtp;
-		xwt.DateTimeUpDown dtud;
-		DateTime? last;
+		public IWpfFrameworkElement Handler { get; set; }
 
-		DateTimePickerMode mode;
+		public static readonly sw.DependencyProperty EditContentProperty =
+			sw.DependencyProperty.Register(nameof(EditContent), typeof(object), typeof(EtoCustomComboBox), new sw.PropertyMetadata(null));
 
-		protected override sw.Size DefaultSize => new sw.Size(mode == DateTimePickerMode.DateTime ? 180 : 120, double.NaN);
+		public static readonly sw.DependencyProperty DropDownContentProperty =
+			sw.DependencyProperty.Register(nameof(DropDownContent), typeof(object), typeof(EtoCustomComboBox), new sw.PropertyMetadata(null));
 
-		protected override bool PreventUserResize { get { return true; } }
+		/// <summary>
+		/// Gets or sets the control shown in the editable selection area of the combo box.
+		/// </summary>
+		public object EditContent
+		{
+			get => GetValue(EditContentProperty);
+			set => SetValue(EditContentProperty, value);
+		}
+
+		/// <summary>
+		/// Gets or sets the content shown in the drop down popup of the combo box.
+		/// </summary>
+		public object DropDownContent
+		{
+			get => GetValue(DropDownContentProperty);
+			set => SetValue(DropDownContentProperty, value);
+		}
+
+		protected override sw.Size MeasureOverride(sw.Size constraint)
+		{
+			return Handler?.MeasureOverride(constraint, base.MeasureOverride) ?? base.MeasureOverride(constraint);
+		}
+	}
+
+	/// <summary>
+	/// WPF <see cref="DateTimePicker"/> handler that combines an Eto <see cref="ThemedDateTimeMaskedTextStepper"/> with a
+	/// WPF <see cref="swc.ComboBox"/> showing a <see cref="swc.Calendar"/> in its drop down for
+	/// <see cref="DateTimePickerMode.Date"/> and <see cref="DateTimePickerMode.DateTime"/> modes, and an Eto
+	/// <see cref="ThemedDateTimeMaskedTextStepper"/> for <see cref="DateTimePickerMode.Time"/> mode.
+	/// </summary>
+	public class DateTimePickerHandler : WpfFrameworkElement<EtoBorder, DateTimePicker, DateTimePicker.ICallback>, DateTimePicker.IHandler
+	{
+		DateTimePickerMode _mode = DateTimePickerMode.Date;
+		DateTime _minDate = DateTime.MinValue;
+		DateTime _maxDate = DateTime.MaxValue;
+		DateTime? _last;
+		bool _showBorder = true;
+
+		EtoCustomComboBox _combo;
+		swc.Calendar _calendar;
+		DateTimeMaskedTextStepper _stepper;
+		int _suppress;
+
+		protected override sw.Size DefaultSize => new sw.Size(_mode == DateTimePickerMode.DateTime ? 180 : _mode == DateTimePickerMode.Time ? 100 : 120, double.NaN);
+
+		protected override bool PreventUserResize => true;
+
+		public override bool UseMousePreview => true;
+
+		public override bool UseKeyPreview => true;
 
 		public DateTimePickerHandler()
 		{
 			Control = new EtoBorder { Handler = this, Focusable = false };
-			Mode = DateTimePickerMode.Date;
+			BuildPresentation();
 		}
 
-		static sw.Thickness DefaultBorderThickness = new xwt.DateTimePicker().BorderThickness;
-
-		public bool ShowBorder
+		void BuildPresentation()
 		{
-			get { return !dtp.BorderThickness.ToEto().IsZero; }
-			set { dtp.BorderThickness = value ? DefaultBorderThickness : new sw.Thickness(0); }
-		}
-
-		void CreateDateTimeUpDown()
-		{
-			if (dtud == null)
+			EnsureStepper();
+			_stepper.Mode = _mode;
+			if (_mode == DateTimePickerMode.Time)
 			{
-				dtud = new xwt.DateTimeUpDown
+				_stepper.ShowStepper = true;
+				Control.Child = _stepper.ToNative(true);
+			}
+			else
+			{
+				_stepper.ShowStepper = false;
+				_stepper.ShowBorder = false;
+				EnsureCombo();
+				Control.Child = _combo;
+			}
+
+			ApplyMinMax();
+			ApplyShowBorder();
+			SetSize();
+		}
+
+		void EnsureCombo()
+		{
+			EnsureStepper();
+
+			if (_combo != null)
+			{
+				_combo.EditContent = _stepper.ToNative(true);
+				return;
+			}
+
+			_calendar = new swc.Calendar { SelectionMode = swc.CalendarSelectionMode.SingleDate };
+			_calendar.SelectedDatesChanged += Calendar_SelectedDatesChanged;
+
+			// the combo box visuals (background, border, chevron) come from the theme style in
+			// themes/generic/CustomComboBox.xaml so it follows the active WPF theme.
+			_combo = new EtoCustomComboBox
+			{
+				Handler = this,
+				Focusable = false,
+				EditContent = _stepper.ToNative(true),
+				DropDownContent = _calendar
+			};
+			_combo.DropDownOpened += (sender, e) => SyncCalendarFromValue();
+		}
+
+		void EnsureStepper()
+		{
+			if (_stepper != null)
+				return;
+
+			_stepper = new DateTimeMaskedTextStepper { ShowBorder = _showBorder };
+			_stepper.ValueChanged += Stepper_ValueChanged;
+
+			var stepper = _stepper.ToNative(true);
+			var stepperElement = _stepper.GetWpfFrameworkElement();
+			stepperElement.SetScale(true, true);
+			stepper.HorizontalAlignment = sw.HorizontalAlignment.Stretch;
+			stepper.VerticalAlignment = sw.VerticalAlignment.Stretch;
+			stepper.Width = double.NaN;
+			stepper.Height = double.NaN;
+
+		}
+
+		void Box_ValueChanged(object sender, EventArgs e)
+		{
+			SyncCalendarFromValue();
+			RaiseValueChanged();
+		}
+
+		void Stepper_ValueChanged(object sender, EventArgs e) => RaiseValueChanged();
+
+		void Calendar_SelectedDatesChanged(object sender, swc.SelectionChangedEventArgs e)
+		{
+			if (_suppress > 0 || _stepper == null)
+				return;
+
+			var date = _calendar.SelectedDate;
+			if (date == null)
+				return;
+
+			// preserve the time component when editing in date+time mode
+			var current = _stepper.Value;
+			var timeOfDay = current?.TimeOfDay ?? TimeSpan.Zero;
+			_stepper.Value = _mode.HasFlag(DateTimePickerMode.Time) ? date.Value.Date + timeOfDay : date.Value.Date;
+			_combo.IsDropDownOpen = false;
+		}
+
+		void SyncCalendarFromValue()
+		{
+			if (_calendar == null)
+				return;
+			_suppress++;
+			try
+			{
+				var val = _stepper?.Value;
+				if (val != null)
 				{
-					Focusable = true,
-					IsTabStop = true,
-					ClipValueToMinMax = true,
-					ShowButtonSpinner = true
-				};
-				dtud.ValueChanged += UpDown_ValueChanged;
-			}
-			if (dtp != null)
-			{
-				CopyValues(dtp, dtud);
-				dtp.ValueChanged -= UpDown_ValueChanged;
-				dtp = null;
-			}
-			Control.Child = dtud;
-		}
-
-		void CreateDateTimePicker()
-		{
-			if (dtp == null)
-			{
-				dtp = new xwt.DateTimePicker
+					_calendar.SelectedDate = val.Value.Date;
+					_calendar.DisplayDate = val.Value.Date;
+				}
+				else
 				{
-					ShowButtonSpinner = false,
-					AutoCloseCalendar = true,
-					ClipValueToMinMax = true,
-					Focusable = true,
-					IsTabStop = true
-				};
-				dtp.ValueChanged += UpDown_ValueChanged;
+					_calendar.SelectedDate = null;
+				}
 			}
-			if (dtud != null)
+			finally
 			{
-				CopyValues(dtud, dtp);
-				dtud.ValueChanged -= UpDown_ValueChanged;
-				dtud = null;
+				_suppress--;
 			}
-			Control.Child = dtp;
 		}
 
-		void CopyValues(xwt.Primitives.UpDownBase<DateTime?> source, xwt.Primitives.UpDownBase<DateTime?> dest)
+		void RaiseValueChanged()
 		{
-			dest.Minimum = source.Minimum;
-			dest.Maximum = source.Maximum;
-			dest.Value = source.Value;
-			dest.Background = source.Background;
-			dest.Foreground = source.Foreground;
-			var font = Widget.Properties.Get<Font>(FontKey);
-			if (font != null)
-				dest.SetEtoFont(font, SetDecorations);
-		}
-
-		void UpDown_ValueChanged(object sender, sw.RoutedPropertyChangedEventArgs<object> e)
-		{
-			var ctl = UpDown;
 			var val = Value;
-			if (val != null)
+			if (_last != val && (_last == null || val == null || Math.Abs((_last.Value - val.Value).TotalSeconds) >= 1))
 			{
-				// still need to do this as the popup doesn't limit the value when using the calendar
-				if (ctl.Minimum != null && val.Value < ctl.Minimum)
-					val = Value = ctl.Minimum.Value;
-				else if (ctl.Maximum != null && val.Value > ctl.Maximum)
-					val = Value = ctl.Maximum.Value;
-			}
-
-			if (last != val && (last == null || val == null || Math.Abs((last.Value - val.Value).TotalSeconds) >= 1))
-			{
+				_last = val;
 				Callback.OnValueChanged(Widget, EventArgs.Empty);
-				last = val;
 			}
 		}
 
-		public override bool UseMousePreview { get { return true; } }
+		void ApplyMinMax()
+		{
+			if (_stepper != null)
+			{
+				_stepper.MinDate = _minDate;
+				_stepper.MaxDate = _maxDate;
+			}
+			if (_calendar != null)
+			{
+				_calendar.DisplayDateStart = _minDate <= DateTime.MinValue ? (DateTime?)null : _minDate;
+				_calendar.DisplayDateEnd = _maxDate >= DateTime.MaxValue ? (DateTime?)null : _maxDate;
+			}
+		}
 
-		public override bool UseKeyPreview { get { return true; } }
+		void ApplyShowBorder()
+		{
+			// the inner masked box is always borderless; the combo provides the border for date modes,
+			// while the stepper draws its own border for time mode.
+			if (_mode != DateTimePickerMode.Time && _combo != null)
+				_combo.BorderThickness = _showBorder ? new sw.Thickness(1) : new sw.Thickness(0);
+			if (_mode == DateTimePickerMode.Time && _stepper != null)
+				_stepper.ShowBorder = _showBorder;
+		}
 
 		public DateTime? Value
 		{
-			get { return UpDown.Value; }
-			set { UpDown.Value = value; }
-		}
-
-		xwt.Primitives.UpDownBase<DateTime?> UpDown
-		{
-			get
+			get => _stepper?.Value;
+			set
 			{
-				return dtp ?? dtud;
+				if (_stepper != null)
+					_stepper.Value = value;
+				_last = value;
 			}
 		}
 
 		public DateTime MinDate
 		{
-			get { return UpDown.Minimum ?? DateTime.MinValue; }
-			set { UpDown.Minimum = value == DateTime.MinValue ? null : (DateTime?)value; }
+			get => _minDate;
+			set
+			{
+				_minDate = value;
+				if (_maxDate < _minDate)
+					_maxDate = _minDate;
+				ApplyMinMax();
+			}
 		}
 
 		public DateTime MaxDate
 		{
-			get { return UpDown.Maximum ?? DateTime.MaxValue; }
-			set { UpDown.Maximum = value == DateTime.MaxValue ? null : (DateTime?)value; }
+			get => _maxDate;
+			set
+			{
+				_maxDate = value;
+				if (_minDate > _maxDate)
+					_minDate = _maxDate;
+				ApplyMinMax();
+			}
 		}
 
 		public DateTimePickerMode Mode
 		{
-			get { return mode; }
+			get => _mode;
 			set
 			{
-				mode = value;
-				switch (mode)
-				{
-					case DateTimePickerMode.Date:
-						CreateDateTimePicker();
-						dtp.TimePickerVisibility = sw.Visibility.Collapsed;
-						dtp.Format = xwt.DateTimeFormat.ShortDate;
-						break;
-					case DateTimePickerMode.DateTime:
-						CreateDateTimePicker();
-						dtp.TimePickerVisibility = sw.Visibility.Visible;
-						var format = CultureInfo.CurrentUICulture.DateTimeFormat;
-						dtp.Format = xwt.DateTimeFormat.Custom;
-						dtp.FormatString = format.ShortDatePattern + " " + format.LongTimePattern;
-						break;
-					case DateTimePickerMode.Time:
-						CreateDateTimeUpDown();
-						dtud.Format = xwt.DateTimeFormat.LongTime;
-						break;
-					default:
-						throw new NotSupportedException();
-				}
-				SetSize();
+				if (_mode == value)
+					return;
+
+				var current = Value;
+				_mode = value;
+				BuildPresentation();
+				Value = current;
+			}
+		}
+
+		public bool ShowBorder
+		{
+			get => _showBorder;
+			set
+			{
+				_showBorder = value;
+				ApplyShowBorder();
 			}
 		}
 
 		public override Color BackgroundColor
 		{
-			get { return UpDown.Background.ToEtoColor(); }
-			set { UpDown.Background = value.ToWpfBrush(Control.Background); }
+			get => (_combo?.Background ?? Control.Background).ToEtoColor();
+			set
+			{
+				var brush = value.ToWpfBrush();
+				if (_combo != null)
+					_combo.Background = brush;
+			}
 		}
 
-		protected virtual void SetDecorations(sw.TextDecorationCollection decorations)
+		public Color TextColor
 		{
+			get => _stepper?.TextColor ?? Colors.Black;
+			set
+			{
+				if (_stepper != null)
+					_stepper.TextColor = value;
+			}
 		}
 
 		static readonly object FontKey = new object();
 
 		public Font Font
 		{
-			get { return Widget.Properties.Create<Font>(FontKey, () => new Font(new FontHandler(UpDown))); }
+			get => Widget.Properties.Get<Font>(FontKey) ?? _stepper?.Font;
 			set
 			{
-				if (Widget.Properties.Get<Font>(FontKey) != value)
-				{
-					Widget.Properties[FontKey] = value;
-					UpDown.SetEtoFont(value, SetDecorations);
-				}
+				Widget.Properties[FontKey] = value;
+				if (_stepper != null)
+					_stepper.Font = value;
 			}
 		}
 
-		public Color TextColor
-		{
-			get { return UpDown.Foreground.ToEtoColor(); }
-			set { UpDown.Foreground = value.ToWpfBrush(UpDown.Foreground); }
-		}
+		public override void Focus() => _stepper?.Focus();
+
+		public override bool HasFocus => base.HasFocus || _stepper?.HasFocus == true;
 	}
 }

@@ -94,6 +94,7 @@ namespace Eto.Wpf.Forms
 		where TWidget : Control
 		where TCallback : Control.ICallback
 	{
+		bool _needsThemeChanged;
 		Size? newSize;
 		sw.Size parentMinimumSize;
 		HwndSource _mouseHWheelSource;
@@ -110,12 +111,24 @@ namespace Eto.Wpf.Forms
 				return hwnd != null ? hwnd.Handle : IntPtr.Zero;
 			}
 		}
+		
+		protected virtual bool ContainsScrollViewer => false;
 
 		public virtual sw.Size MeasureOverride(sw.Size constraint, Func<sw.Size, sw.Size> measure)
 		{
 			// enforce eto-style sizing to wpf controls
 			var size = UserPreferredSize;
 			var control = ContainerControl;
+
+			if (ContainsScrollViewer)
+			{
+				// enclosed scrollable does not size appropriately on Arrange, so we need to 
+				// constrain the size here to prevent it from using the available space incorrectly.
+				if (!double.IsPositiveInfinity(constraint.Width) && size.Width >= 0 && size.Width < constraint.Width)
+					constraint.Width = size.Width;
+				if (!double.IsPositiveInfinity(constraint.Height) && size.Height >= 0 && size.Height < constraint.Height)
+					constraint.Height = size.Height;
+			}
 
 			// Constrain content to the preferred size of this control, if specified.
 			var desired = measure(constraint.IfInfinity(size.InfinityIfNan()));
@@ -531,10 +544,24 @@ namespace Eto.Wpf.Forms
 				case Eto.Forms.Control.EnabledChangedEvent:
 					Control.IsEnabledChanged += Control_IsEnabledChanged;
 					break;
+				case Eto.Forms.Control.ThemeChangedEvent:
+					if (_needsThemeChanged)
+						return;
+					_needsThemeChanged = true;
+					if (Widget.Loaded)
+					{
+						Application.Instance.ThemeChanged += HandleThemeChanged;
+					}
+					break;
 				default:
 					base.AttachEvent(id);
 					break;
 			}
+		}
+
+		private void HandleThemeChanged(object sender, EventArgs e)
+		{
+			Callback.OnThemeChanged(Widget, EventArgs.Empty);
 		}
 
 		private void HandleIsKeyboardFocusWithinChanged(object sender, sw.DependencyPropertyChangedEventArgs e)
@@ -941,6 +968,11 @@ namespace Eto.Wpf.Forms
 			{
 				SetDefaultScale();
 			}
+			
+			if (_needsThemeChanged)
+			{
+				Application.Instance.ThemeChanged += HandleThemeChanged;
+			}
 		}
 
 		protected virtual void SetDefaultScale() => SetScale(true, true);
@@ -997,6 +1029,11 @@ namespace Eto.Wpf.Forms
 
 		public virtual void OnUnLoad(EventArgs e)
 		{
+			if (_needsThemeChanged)
+			{
+				Application.Instance.ThemeChanged -= HandleThemeChanged;
+			}
+			
 			if (NeedsPixelSizeNotifications && Win32.PerMonitorDpiSupported)
 			{
 				var parent = ParentWindow;

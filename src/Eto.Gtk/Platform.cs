@@ -247,6 +247,8 @@ namespace Eto.GtkSharp
 			#else
 			p.Add<Spinner.IHandler>(() => new ThemedSpinnerHandler());
 			#endif
+
+			p.Add<Themes.IHandler>(() => new ThemesHandler());
 		}
 	}
 }
