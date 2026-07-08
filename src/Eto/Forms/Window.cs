@@ -248,8 +248,16 @@ public abstract class Window : Panel
 	/// Gets or sets the location of the window
 	/// </summary>
 	/// <remarks>
-	/// Note that in multi-monitor setups, the origin of the location is at the upper-left of <see cref="Eto.Forms.Screen.PrimaryScreen"/>. <br/>
-	/// Also note, that on Linux systems running GTK via Wayland, this will always point to <c>0, 0</c>, and setting it to different values will have no effect.
+	/// Note that in multi-monitor setups, the origin of the location is at the upper-left 
+	/// of <see cref="Eto.Forms.Screen.PrimaryScreen"/>.
+	/// 
+	/// Also note, that on Linux systems running GTK via Wayland, the location is relative 
+	/// to the <see cref="Owner"/> when one is set and the <see cref="WindowStyle"/> is 
+	/// <see cref="WindowStyle.None"/>; otherwise it will always point to <c>0, 0</c> and 
+	/// setting it to different values will have no effect.
+	/// 
+	/// Using <see cref="Control.PointToScreen"/> on a control within the <see cref="Owner"/> 
+	/// can be used to position the window relative to specific elements of the owner.
 	/// </remarks>
 	public new Point Location
 	{
@@ -263,12 +271,8 @@ public abstract class Window : Panel
 	/// <value>The bounding rectangle of the window</value>
 	public new Rectangle Bounds
 	{
-		get { return new Rectangle(Handler.Location, Handler.Size); }
-		set
-		{
-			Handler.Location = value.Location;
-			Handler.Size = value.Size;
-		}
+		get { return Handler.Bounds; }
+		set { Handler.Bounds = value; }
 	}
 
 	/// <summary>
@@ -720,10 +724,28 @@ public abstract class Window : Panel
 		/// Gets or sets the location of the window
 		/// </summary>
 		/// <remarks>
-		/// Note that in multi-monitor setups, the origin of the location is at the upper-left of <see cref="Eto.Forms.Screen.PrimaryScreen"/> <br/>
-		/// Also note, that on Linux systems running GTK via Wayland, this will always point to <c>0, 0</c>, and setting it to different values will have no effect.
+		/// Note that in multi-monitor setups, the origin of the location is at the upper-left 
+		/// of <see cref="Eto.Forms.Screen.PrimaryScreen"/>.
+		/// 
+		/// Also note, that on Linux systems running GTK via Wayland, the location is relative 
+		/// to the <see cref="Owner"/> when one is set and the <see cref="WindowStyle"/> is 
+		/// <see cref="WindowStyle.None"/>; otherwise it will always point to <c>0, 0</c> and 
+		/// setting it to different values will have no effect.
+		/// 
+		/// Using <see cref="Control.PointToScreen"/> on a control within the <see cref="Owner"/> 
+		/// can be used to position the window relative to specific elements of the owner.
 		/// </remarks>
 		new Point Location { get; set; }
+
+		/// <summary>
+		/// Gets or sets the size and location of the window
+		/// </summary>
+		/// <remarks>
+		/// Where the platform provides an API to set both the size and location at once, handlers should use it
+		/// so the window is repositioned and resized in a single operation instead of two separate steps.
+		/// </remarks>
+		/// <value>The bounding rectangle of the window</value>
+		Rectangle Bounds { get; set; }
 
 		/// <summary>
 		/// Gets or sets the opacity of the window

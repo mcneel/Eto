@@ -796,7 +796,13 @@ namespace Eto.GtkSharp.Forms
 				{
 					if (context != null)
 						return context;
-					context = new Gtk.IMMulticontext();
+					// Native TextBox/TextArea already own a system-IM (ibus) context on
+					// their GtkEntry/GtkTextView; a second focused IMMulticontext steals
+					// their input. Only Drawables (custom-drawn text) need a full IME
+					// here -- native widgets use the standalone IMContextSimple.
+					context = (Handler != null && HandlesDrawableComposition(Handler))
+						? (Gtk.IMContext)new Gtk.IMMulticontext()
+						: new Gtk.IMContextSimple();
 					context.UsePreedit = true;
 					context.PreeditStart += (o, args) =>
 					{
@@ -1309,11 +1315,20 @@ namespace Eto.GtkSharp.Forms
 			if (!ContainerControl.IsRealized)
 			{
 				if (ContainerControl is Gtk.Window window)
+				{
 					window.Child.ShowAll();
+					window.Realize();
+				}
 				else
 					ContainerControl.ShowAll();
 
-				ContainerControl.Realize();
+#if GTK3
+				// GTK returns a stale (minimal) size on the first size request after ShowAll -- some
+				// widgets (e.g. GtkTreeView) only settle their preferred size on a subsequent request.
+				// Prime it here so the measurement below returns the settled value for controls that
+				// haven't been shown yet.
+				control.GetPreferredSize(out _, out _);
+#endif
 			}
 #if GTK3
 			var requestMode = ContainerControl.RequestMode;
