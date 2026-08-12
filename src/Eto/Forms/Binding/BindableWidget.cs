@@ -68,10 +68,18 @@ public abstract class BindableWidget : Widget, IBindable
 	{
 		Properties.TriggerEvent(DataContextChangedKey, this, e);
 
-		if (this is IBindableWidgetContainer container)
+		// a disposed container cannot enumerate its children (accessing its handler
+		// throws ObjectDisposedException), and disposed children have no bindings
+		// left to notify. Skip both, e.g. when a partially disposed tree is being
+		// torn down and detaching a control changes its effective data context.
+		if (this is IBindableWidgetContainer container && !IsDisposed)
 		{
 			foreach (var child in container.Children)
+			{
+				if (child.IsDisposed)
+					continue;
 				child.TriggerDataContextChanged();
+			}
 		}
 	}
 
@@ -252,10 +260,17 @@ public abstract class BindableWidget : Widget, IBindable
 			Properties.Remove(Bindings_Key);
 		}
 
-		if (this is IBindableWidgetContainer container)
+		// a disposed container cannot enumerate its children (accessing its handler
+		// throws ObjectDisposedException), and its children were already unbound when
+		// it was disposed. Same for disposed children encountered during the recursion.
+		if (this is IBindableWidgetContainer container && !IsDisposed)
 		{
 			foreach (var child in container.Children)
+			{
+				if (child.IsDisposed)
+					continue;
 				child.Unbind();
+			}
 		}
 	}
 
@@ -273,10 +288,16 @@ public abstract class BindableWidget : Widget, IBindable
 			bindings.Update(mode);
 		}
 
-		if (this is IBindableWidgetContainer container)
+		// see Unbind/OnDataContextChanged: disposed containers cannot enumerate
+		// their children, and disposed children have no bindings to update.
+		if (this is IBindableWidgetContainer container && !IsDisposed)
 		{
 			foreach (var child in container.Children)
+			{
+				if (child.IsDisposed)
+					continue;
 				child.UpdateBindings(mode);
+			}
 		}
 	}
 }
