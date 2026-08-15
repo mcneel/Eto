@@ -551,7 +551,9 @@ namespace Eto.Wpf.Forms
 					// handled in DoDragDrop, as it is blocking on Windows
 					break;
 				case Eto.Forms.Control.EnabledChangedEvent:
-					Control.IsEnabledChanged += Control_IsEnabledChanged;
+					// Enabled is set on the container, which isn't always the same as Control (and Control
+					// may not even be in the visual tree yet, e.g. an empty TableLayout), so watch that instead.
+					ContainerControl.IsEnabledChanged += Control_IsEnabledChanged;
 					break;
 				case Eto.Forms.Control.ThemeChangedEvent:
 					if (_needsThemeChanged)
@@ -938,7 +940,10 @@ namespace Eto.Wpf.Forms
 				// this can happen when something happens during the mouse dragging, such as showing a dialog.
 				isMouseCaptured = false;
 
-				var args = e.ToEto(ContainerControl, swi.MouseButtonState.Pressed);
+				// MouseButtons.None is passed as the user may not have released the button yet,
+				// so it isn't mistakenly taken as a mouse click.
+				var location = e.GetPosition(ContainerControl).ToEto();
+				var args = new MouseEventArgs(MouseButtons.None, swi.Keyboard.Modifiers.ToEto(), location);
 				Callback.OnMouseUp(Widget, args);
 			}
 		}
@@ -1079,9 +1084,19 @@ namespace Eto.Wpf.Forms
 
 		System.Windows.Forms.Screen SwfScreen => Win32.GetScreenFromWindow(Widget.ParentWindow?.NativeHandle ?? IntPtr.Zero);
 
+		/// <summary>
+		/// Determines if the control can be translated to/from screen co-ordinates.
+		/// </summary>
+		/// <remarks>
+		/// WPF raises its Loaded event at <see cref="sw.Threading.DispatcherPriority.Loaded"/>, so its IsLoaded can still
+		/// be false right after a control has been added, measured and arranged (e.g. after Control.UpdateLayout()).
+		/// Eto's Loaded state is already set at that point, so check both to translate as soon as it is possible.
+		/// </remarks>
+		bool CanTranslateToScreen => ContainerControl.IsLoaded || Widget.Loaded;
+
 		public PointF PointFromScreen(PointF point)
 		{
-			if (!ContainerControl.IsLoaded)
+			if (!CanTranslateToScreen)
 				return point;
 
 			// ensure we're connected to a presentation source
@@ -1115,7 +1130,7 @@ namespace Eto.Wpf.Forms
 
 		public PointF PointToScreen(PointF point)
 		{
-			if (!ContainerControl.IsLoaded)
+			if (!CanTranslateToScreen)
 				return point;
 
 			// ensure we're connected to a presentation source
