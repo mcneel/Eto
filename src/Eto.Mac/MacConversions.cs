@@ -418,6 +418,12 @@ namespace Eto.Mac
 				&& !theEvent.ModifierFlags.HasFlag(NSEventModifierMask.NumericPadKeyMask))
 			{
 				key = KeyMap.Convert(charactersIgnoringModifiers, 0);
+				// CharactersIgnoringModifiers ignores cmd/option but NOT shift, so a shifted
+				// letter arrives uppercase and misses the lowercase-keyed map. Fold case before
+				// falling back to the layout-blind hardware keycode, otherwise shifted letter
+				// shortcuts (e.g. cmd+shift+v) resolve to the wrong key on non-QWERTY layouts.
+				if (key == Keys.None)
+					key = KeyMap.Convert(charactersIgnoringModifiers.ToLowerInvariant(), 0);
 			}
 			if (key == Keys.None)
 			{
