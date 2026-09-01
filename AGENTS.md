@@ -10,6 +10,11 @@ routine implementation details, or facts already evident from the repository. Wh
 do not add it. Curate existing entries and remove stale or low-value notes to justify the token
 cost this file imposes on every request.
 
+**Contributing from the Rhino tree:** the upstream-first workflow (branch off
+`upstream/develop` → PR to `picoe/Eto` → merge into `rhino-9.x` → bump the submodule in the
+Rhino repo) is documented for humans in `README.md`; follow it there rather than pushing
+straight to `rhino-9.x`.
+
 ## Running unit tests
 
 ```bash

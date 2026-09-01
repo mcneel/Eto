@@ -9,6 +9,126 @@ Eto.Forms
 [![NuGet](http://img.shields.io/nuget/v/Eto.Forms.svg?style=flat)](https://www.nuget.org/packages/Eto.Forms/)
 [![MyGet](http://img.shields.io/myget/eto/vpre/Eto.Forms.svg?style=flat&label=MyGet)](https://www.myget.org/gallery/eto)
 
+Contributing an Eto change for Rhino
+------------------------------------
+
+This is the `rhino-9.x` branch of `mcneel/Eto`, our fork of [picoe/Eto](https://github.com/picoe/Eto).
+Rhino 9 builds this branch, where Eto sits inside the Rhino source tree as the submodule
+`src4/DotNetSDK/Eto`.
+
+Fixes go **upstream first**. Even when you found the bug in Rhino, make the change against
+`picoe/Eto`'s `develop` branch and let it come back to us through a merge. That keeps this fork a
+fast-forwardable copy of upstream, so nothing has to be re-applied every time we merge. The full
+trip is:
+
+> branch off `upstream/develop` → pull request to `picoe/Eto` → merge `develop` into `rhino-9.x` →
+> bump the submodule pointer in the Rhino repo → pull request to `mcneel/rhino` `9.x`
+
+Steps 1–4 run inside `src4/DotNetSDK/Eto` in your Rhino checkout. The examples use the
+[`gh`](https://cli.github.com) CLI, but every `gh` step can be done on github.com instead.
+
+### One-time setup
+
+The submodule's `origin` is already `mcneel/Eto`. Add upstream alongside it:
+
+```bash
+cd src4/DotNetSDK/Eto
+git remote add upstream https://github.com/picoe/Eto.git
+git fetch upstream
+```
+
+### 1. Branch off upstream's develop
+
+```bash
+git fetch upstream
+git checkout -b <firstname>/<short-topic> upstream/develop
+```
+
+Branch off `upstream/develop`, **not** `rhino-9.x` — otherwise your pull request drags along every
+McNeel-only commit that upstream hasn't taken yet. Name the branch after yourself and the change,
+matching what's already there: `curtis/mac-numericstepper-culture`,
+`callum/filter-collection-add-range`.
+
+Two things to expect while you work on this branch:
+
+- The submodule now points at `develop`, so the surrounding Rhino tree may not build against it.
+  That's normal, and step 4 puts you back on `rhino-9.x`.
+- The Rhino repo shows `src4/DotNetSDK/Eto` as modified in `git status`. Leave it alone — don't
+  commit that pointer change on the Rhino side yet (step 5 explains why).
+
+### 2. Commit and push the branch here
+
+```bash
+git commit -am "Mac: Make NumericStepper format properly to invariant"
+git push -u origin <firstname>/<short-topic>
+```
+
+Push to `origin` — the branch lives on `mcneel/Eto`, so anyone on the team can pick it up, and it
+doesn't depend on a personal fork.
+
+### 3. Open the pull request against picoe/Eto
+
+```bash
+gh pr create --repo picoe/Eto --base develop --head mcneel:<firstname>/<short-topic> --fill
+```
+
+The base branch is `develop`, which is upstream's mainline. (Without write access to
+`mcneel/Eto`, push to your own fork of Eto instead and use
+`--head <github-user>:<firstname>/<short-topic>`.)
+
+Now wait for it to be reviewed and merged upstream — the remaining steps need the commit to exist
+in `picoe/Eto`.
+
+### 4. Merge develop into rhino-9.x
+
+Once it's merged upstream, bring `develop` into this branch:
+
+```bash
+git checkout rhino-9.x
+git pull --ff-only
+git fetch upstream
+git merge upstream/develop
+git push origin rhino-9.x
+```
+
+If the `pull` won't fast-forward, your local `rhino-9.x` has commits that aren't on `origin` — sort
+that out before merging, since this branch should be exactly what's on `mcneel/Eto`.
+
+The merge produces the usual `Merge remote-tracking branch 'upstream/develop' into rhino-9.x`
+commit. Push it straight to `origin` — we don't use pull requests on `mcneel/Eto` itself. If the
+merge conflicts, it's because a McNeel-only change touched the same code; resolve it in the merge
+commit, and don't rewrite upstream's history.
+
+Your topic branch has served its purpose now and can be deleted, locally and on `mcneel/Eto`.
+
+### 5. Bump the submodule in the Rhino repo
+
+This part works like any other Rhino submodule: a commit that moves the pointer, on its own branch,
+in a pull request. Do it only now that the Eto commit is reachable from `origin/rhino-9.x` — a
+pointer to a commit that only exists on a topic branch looks fine on your machine and breaks the
+build for everyone else, and for CI.
+
+```bash
+cd $(git rev-parse --show-superproject-working-tree)   # back to the Rhino root
+git checkout 9.x && git pull
+git checkout -b <firstname>/<short-topic>
+git add src4/DotNetSDK/Eto
+git commit          # subject = what the change does; body = "Fixes RH-xxxxx"
+git push -u origin <firstname>/<short-topic>
+gh pr create --base 9.x --fill
+```
+
+A few conventions for that commit:
+
+- The subject describes the behaviour that changed, not the mechanics — `Mac: Make NumericStepper
+  format properly to invariant`, not "update Eto submodule".
+- Cite the YouTrack issue in the body: `Fixes RH-96796`, or `Cite RH-89276` when the change is
+  related to an issue but doesn't close it.
+- Several Eto changes can ride along in one bump. Use the subject `Eto updates` and give each
+  change its own bullet in the body, with its own RH reference.
+- Any Rhino-side code the change needs (say a new style in `RhinoWindows/Runtime/EtoStyles.cs`)
+  belongs in the same commit, so the new Eto version and its first use land together.
+
 Description
 -----------
 
