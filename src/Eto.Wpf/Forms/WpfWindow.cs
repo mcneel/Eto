@@ -84,6 +84,10 @@ namespace Eto.Wpf.Forms
 
 		protected override sw.FrameworkElement KeyEventControl => main;
 
+		// main is only in the route when something inside the window has keyboard focus, so hook the
+		// window itself as well to get the keys when focus is on the window.
+		protected override sw.FrameworkElement FallbackKeyEventControl => Control;
+
 		public bool MovableByWindowBackground
 		{
 			get => Widget.Properties.Get<bool>(WpfWindow.MovableByWindowBackground_Key);
@@ -132,6 +136,7 @@ namespace Eto.Wpf.Forms
 			Control.Content = main;
 			Control.SourceInitialized += (sender, e) => OnSourceInitialized();
 			Control.Loaded += Control_Loaded;
+			Control.IsEnabledChanged += Control_IsEnabledChanged;
 			Control.PreviewKeyDown += (sender, e) =>
 			{
 				// need to call validate on the input bindings before trying to execute them
@@ -232,13 +237,32 @@ namespace Eto.Wpf.Forms
 			// which we do not want.
 			SetSizeToContent();
 			if (Control.ShowActivated)
-				Control.MoveFocus(new swi.TraversalRequest(swi.FocusNavigationDirection.Next));
+				MoveFocusToContent();
 
 			HwndSource?.AddHook(HookProc);
 
 			if (FireOnLoadComplete)
 				Callback.OnLoadComplete(Widget, EventArgs.Empty);
 		}
+
+		void MoveFocusToContent() => Control.MoveFocus(new swi.TraversalRequest(swi.FocusNavigationDirection.Next));
+
+		private void Control_IsEnabledChanged(object sender, sw.DependencyPropertyChangedEventArgs e)
+		{
+			// WPF clears the keyboard focus when a window gets disabled, but does not restore it when
+			// the window is enabled again. A window with nothing focused inside it gets no keyboard
+			// input at all (not even at the window itself), so focus has to be moved back into it.
+			// Which control ends up with it is not preserved, same as the other platforms.
+			if (Control.IsEnabled && Control.IsActive && !Control.IsKeyboardFocusWithin)
+			{
+				// The window itself is focused rather than a control in it, as focusing a control would
+				// look to the user as if they had tabbed to it, showing its tooltip and focus visual.
+				// Clearing the focus scope's element is what keeps Focus() from delegating to whatever
+				// was focused before.
+				swi.FocusManager.SetFocusedElement(Control, null);
+				Control.Focus();
+			}
+		}	
 
 		protected bool FireOnLoadComplete { get; set; }
 
