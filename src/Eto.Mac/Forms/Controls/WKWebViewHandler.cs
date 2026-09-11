@@ -57,7 +57,12 @@ namespace Eto.Mac.Forms.Controls
 			{
 				var h = Handler;
 				if (h == null)
+				{
+					// WebKit terminates the process when the decision handler is released without
+					// being called, so answer even when there is nothing left to render into.
+					decisionHandler(wk.WKNavigationActionPolicy.Cancel, preferences);
 					return;
+				}
 					
 				var requestUrl = navigationAction.Request.Url;
 				if (h.EnablePrintRouting && requestUrl.AbsoluteString == "eto:print")
