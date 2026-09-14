@@ -23,18 +23,45 @@ dotnet test --project test/Eto.Test.UnitTests/Eto.Test.UnitTests.csproj -f net10
 
 - `--filter` uses NUnit / Microsoft.Testing.Platform syntax; a bare class name (`"BrushTests"`)
   or `FullyQualifiedName~Brush` both work. Omit `--filter` to run everything.
-- **Always exclude the `ManualTest` category** when running broader/unscoped test sets — those
-  tests require user interaction and will otherwise stall waiting for input. Append
-  `TestCategory!=ManualTest` (combine with `&`), e.g.
-  `--filter "FullyQualifiedName~Grid&TestCategory!=ManualTest"` or, to run everything else,
-  `--filter "TestCategory!=ManualTest"`.
-- **Always pass `-f`** — the project multi-targets `net48;net10.0;net10.0-windows`.
-  On Linux/macOS use `-f net10.0`; the Windows-only TFMs won't build there.
+- **Always exclude the `ManualTest` category — on every run, not just unscoped ones.** They put a
+  window on the user's screen and block indefinitely (`ManualForm` waits with `timeout: -1`) until a
+  human performs the interaction and clicks Pass/Fail — several are slow and fiddly to do by hand.
+  Running them unasked hijacks the user's machine, and whatever they report is about whether the
+  person carried out the steps, *not* whether the code works: they surface as **failures**, not
+  skips, so they masquerade as real breakage and poison a before/after comparison.
+  `--filter "FullyQualifiedName~Grid&TestCategory!=ManualTest"`, or `--filter "TestCategory!=ManualTest"`
+  to run everything else.
+- **Repeat the exclusion in every `|` alternative.** `&` binds tighter than `|`, so
+  `FullyQualifiedName~CheckBox|FullyQualifiedName~RadioButton&TestCategory!=ManualTest` still runs every
+  manual `CheckBox` test. Parentheses would group it, but the macos TFM parses its own filter and treats
+  them as literal characters — silently matching nothing — so repeat the term instead:
+  `"FullyQualifiedName~CheckBox&TestCategory!=ManualTest|FullyQualifiedName~RadioButton&TestCategory!=ManualTest"`.
+- **Always pass `-f`** — the project multi-targets `net48;net10.0;net10.0-windows` (plus
+  `net10.0-macos` on a Mac). On Linux use `-f net10.0`; the Windows-only TFMs won't build there.
 - Test runner is Microsoft.Testing.Platform (set in `global.json`), NUnit 4.
 - **The modern Mac-specific tests are in `test/Eto.Test.Mac/Eto.Test.macOS.csproj` and require
   the matching .NET macOS workload.** The presence of `Microsoft.macOS.Ref` packs alone is not
   sufficient. If the workload rejects a newer Xcode patch version, set
   `<ValidateXcodeVersion>false</ValidateXcodeVersion>` (already set in `build/Common.Build.props`).
+- **On a Mac, `-f net10.0-macos` runs the tests against the modern .NET macOS backend**
+  (`Eto.macOS`/`Eto.Test.macOS`), `-f net10.0` against MonoMac (`Eto.Mac64`). The macos TFM builds the
+  runner as a real `.app` and has to: the bundle's native launcher is what initializes ObjCRuntime, so a
+  bundle-less build (`_CanOutputAppBundle=false`) produces an executable that dies in
+  `Runtime.EnsureInitialized` before reaching `Main`. `RunWithOpen=false` makes `dotnet test` run the
+  executable inside the bundle rather than `open`ing the app, which would detach it from the test host.
+- **NUnit3TestAdapter's testing-platform bridge can't run tests from an app bundle**, so the macos TFM
+  doesn't use it: the NUnit engine's driver builds an `AssemblyDependencyResolver` per test assembly,
+  which needs hostpolicy to have been initialized by `corehost_main`. The bundle's launcher starts the
+  runtime itself, so every assembly fails to load with "Hostpolicy must be initialized ...".
+  `Eto.Test.UnitTests/NUnitTestFramework.cs` runs NUnit in-process there instead (sharing
+  `UnitTestRunner` with the GUI app's Unit Tests section) and implements `--filter` itself — a subset:
+  `FullyQualifiedName`/`Name`/`TestCategory` with `=` `!=` `~` `!~`, combined with `&` and `|`, no
+  parentheses.
+- **A macos-TFM app killed at launch with no output at all** (exit 137, "Code Signature Invalid" in
+  `~/Library/Logs/DiagnosticReports`) means its bundled runtime dylibs weren't re-signed: the SDK rewrites
+  their install names, invalidating Microsoft's signature, and keeps the codesign stamps in `artifacts/obj`
+  — so deleting the `.app` without the obj dir makes it re-copy them and skip signing. Delete
+  `artifacts/obj/Mac/<project>` and rebuild.
 - **Reflection gotcha (net48 vs net):** `Type.GetType("Ns.Type, PresentationCore")` (partial assembly
   name) resolves on .NET but returns **null** on .NET Framework, so tests that reflect over WPF types
   (e.g. finding the native `ScrollViewer`) silently no-op on net48. Search loaded assemblies instead:
@@ -199,6 +226,15 @@ must exclude `MouseButtons.Alternate` (see `DrawableSection.InputMethodDrawable`
 un-overridden answer and the fix looks broken. Use `Eto.Mac.Messaging.*_objc_msgSend*` on `view.Handle`
 instead (see `Eto.Test.Mac/UnitTests/DrawableTests.IsTextInputClient`). AppKit itself calls through
 normal dispatch, so it does see the override.
+
+## Mac: which appearance a build gets depends on its linked SDK, not on the backend
+
+Whether AppKit renders a build with Liquid Glass or the compatibility appearance depends on the SDK the
+**main executable** was linked against, which is not a stable property of a backend: for `Eto.macOS` that
+is the Xcode used to compile it, but for `Eto.Mac64` it is the .NET SDK's prebuilt apphost, whose SDK
+changes whenever Microsoft rebuilds it. So "Mac64 is pre-Tahoe" has a shelf life — prefer measuring real
+values over branching on the appearance, and note that `MacVersion.IsUsingGlass` (SDK-derived) and
+`MacVersion.IsAtLeast(26, 0)` (OS-derived) answer genuinely different questions.
 
 ## Adding a member to a widget's `IHandler`
 
