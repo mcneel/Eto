@@ -41,11 +41,12 @@ git fetch upstream
 
 ```bash
 git fetch upstream
-git checkout -b <firstname>/<short-topic> upstream/develop
+git checkout --no-track -b <firstname>/<short-topic> upstream/develop
 ```
 
 Branch off `upstream/develop`, **not** `rhino-9.x` — otherwise your pull request drags along every
-McNeel-only commit that upstream hasn't taken yet. Name the branch after yourself and the change,
+McNeel-only commit that upstream hasn't taken yet. Use `--no-track` so the new branch doesn't follow
+`upstream/develop`; otherwise a bare `git push` would try to push straight to it. Name the branch after yourself and the change,
 matching what's already there: `curtis/mac-numericstepper-culture`,
 `callum/filter-collection-add-range`.
 
@@ -59,7 +60,8 @@ Two things to expect while you work on this branch:
 ### 2. Commit and push the branch here
 
 ```bash
-git commit -am "Mac: Make NumericStepper format properly to invariant"
+git add <changed and new files>     # -a alone misses new files, such as a new test
+git commit -m "Mac: Make NumericStepper format properly to invariant"
 git push -u origin <firstname>/<short-topic>
 ```
 
@@ -85,14 +87,17 @@ Once it's merged upstream, bring `develop` into this branch:
 
 ```bash
 git checkout rhino-9.x
-git pull --ff-only
+git fetch origin
+git merge --ff-only origin/rhino-9.x
 git fetch upstream
 git merge upstream/develop
 git push origin rhino-9.x
 ```
 
-If the `pull` won't fast-forward, your local `rhino-9.x` has commits that aren't on `origin` — sort
-that out before merging, since this branch should be exactly what's on `mcneel/Eto`.
+These commands name the remote branches explicitly, so they work whether or not your local
+`rhino-9.x` follows `origin/rhino-9.x`. If the fast-forward fails, your local `rhino-9.x` has
+commits that aren't on `origin` — sort that out before merging, since this branch should be exactly
+what's on `mcneel/Eto`.
 
 The merge produces the usual `Merge remote-tracking branch 'upstream/develop' into rhino-9.x`
 commit. Push it straight to `origin` — we don't use pull requests on `mcneel/Eto` itself. If the
@@ -110,13 +115,19 @@ build for everyone else, and for CI.
 
 ```bash
 cd $(git rev-parse --show-superproject-working-tree)   # back to the Rhino root
-git checkout 9.x && git pull
-git checkout -b <firstname>/<short-topic>
+git fetch origin
+git checkout --no-track -b <firstname>/<short-topic> origin/9.x
+git submodule update        # so only Eto shows as changed
+cd src4/DotNetSDK/Eto && git checkout rhino-9.x && cd -
 git add src4/DotNetSDK/Eto
 git commit          # subject = what the change does; body = "Fixes RH-xxxxx"
 git push -u origin <firstname>/<short-topic>
 gh pr create --base 9.x --fill
 ```
+
+Branching from `origin/9.x` with `--no-track` gives you the latest `9.x` without the new branch
+following it. `git submodule update` resets every submodule, Eto included, to what `9.x` pins, so
+check Eto back out on `rhino-9.x` afterwards.
 
 A few conventions for that commit:
 
