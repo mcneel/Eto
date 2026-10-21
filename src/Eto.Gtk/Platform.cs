@@ -33,6 +33,15 @@ namespace Eto.GtkSharp
 			var args = new string[0];
 			if (Gtk.Application.InitCheck(string.Empty, ref args))
 				Gdk.Threads.Enter();
+
+			// Wayland and X11 match windows to the installed .desktop file by these.
+			// Set after init, which replaces the program name with the process name.
+			var appId = Assembly.GetEntryAssembly()?.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(r => r.Key == "Eto.LinuxAppId")?.Value;
+			if (!string.IsNullOrEmpty(appId))
+			{
+				GLib.Global.ProgramName = appId;
+				Gdk.Global.ProgramClass = appId;
+			}
 		}
 	}
 
