@@ -541,8 +541,9 @@ namespace Eto.GtkSharp.Forms
 				// cascade to the child controls first, the window raises Shown last
 				Application.Instance.AsyncInvoke(() =>
 				{
-					if (!h.WasClosed)
-						h.FireOnShown();
+					var handler = Handler;
+					if (handler != null && !handler.WasClosed)
+						handler.FireOnShown();
 				});
 			}
 
@@ -830,7 +831,7 @@ namespace Eto.GtkSharp.Forms
 			set
 			{
 				icon = value;
-				Control.Icon = ((IconHandler)icon.Handler).Pixbuf;
+				Control.Icon = icon == null ? null : ((IconHandler)icon.Handler).Pixbuf;
 			}
 		}
 
