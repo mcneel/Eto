@@ -234,6 +234,8 @@ namespace Eto.GtkSharp.Forms
 		const int O_NONBLOCK = 0x800;
 		const short POLLIN = 0x001;
 		const short POLLOUT = 0x004;
+		const short POLLERR = 0x008;
+		const short POLLHUP = 0x010;
 		const int F_GETFL = 3;
 		const int F_SETFL = 4;
 		const int EAGAIN = 11;     // == EWOULDBLOCK on Linux
@@ -391,7 +393,8 @@ namespace Eto.GtkSharp.Forms
 				wl_proxy_add_listener(device, deviceVtable, IntPtr.Zero);
 
 				// second roundtrip: receive the initial selection offer
-				wl_display_roundtrip(display);
+				if (wl_display_roundtrip(display) < 0)
+					return false;
 
 				// dedicated dispatch thread + wakeup pipe for clean shutdown
 				wakePipe = new int[2];
@@ -424,10 +427,14 @@ namespace Eto.GtkSharp.Forms
 			{
 				int fd = wl_display_get_fd(display);
 				var pfds = new Pollfd[2];
+				// A failed display cannot recover; retrying would spin the dispatch thread.
 				while (running)
 				{
 					while (wl_display_prepare_read(display) != 0)
-						wl_display_dispatch_pending(display);
+					{
+						if (wl_display_dispatch_pending(display) < 0)
+							return;
+					}
 					wl_display_flush(display);
 
 					pfds[0].fd = fd; pfds[0].events = POLLIN; pfds[0].revents = 0;
@@ -442,12 +449,14 @@ namespace Eto.GtkSharp.Forms
 
 					if ((pfds[0].revents & POLLIN) != 0)
 					{
-						wl_display_read_events(display);
-						wl_display_dispatch_pending(display);
+						if (wl_display_read_events(display) < 0 || wl_display_dispatch_pending(display) < 0)
+							return;
 					}
 					else
 					{
 						wl_display_cancel_read(display);
+						if ((pfds[0].revents & (POLLERR | POLLHUP)) != 0)
+							return;
 					}
 
 					if ((pfds[1].revents & POLLIN) != 0)
@@ -723,6 +732,16 @@ namespace Eto.GtkSharp.Forms
 				try { onSelectionChanged?.Invoke(); } catch { }
 			}
 
+			// Only the regular clipboard is exposed; release primary-selection offers.
+			void OnDevicePrimarySelection(IntPtr data, IntPtr dev, IntPtr offer)
+			{
+				lock (stateLock)
+				{
+					if (offer != IntPtr.Zero && pendingOffers.Remove(offer))
+						wl_proxy_marshal_array_flags(offer, 1, IntPtr.Zero, 0, WL_MARSHAL_FLAG_DESTROY, null);
+				}
+			}
+
 			void OnDeviceFinished(IntPtr data, IntPtr dev) { }
 
 			// Maximum time a single selection transfer may take before we give up. A consumer that stops
@@ -839,7 +858,8 @@ namespace Eto.GtkSharp.Forms
 				DeviceDataOffer ddo = OnDeviceDataOffer;
 				DeviceSelection ds = OnDeviceSelection;
 				DeviceFinished df = OnDeviceFinished;
-				deviceVtable = Vtable(ddo, ds, df);
+				DeviceSelection dps = OnDevicePrimarySelection;
+				deviceVtable = Vtable(ddo, ds, df, dps);
 
 				OfferOffer oo = OnOfferOffer;
 				offerVtable = Vtable(oo);
@@ -882,17 +902,19 @@ namespace Eto.GtkSharp.Forms
 				};
 				FillInterface(ifManager, p + "manager_v1", 1, mgrMethods, null);
 
-				// device: requests set_selection(?o), destroy(); events data_offer(n), selection(?o), finished()
+				// device: requests set_selection(?o), destroy()
 				var devMethods = new[]
 				{
 					Msg("set_selection", "?o", ifSource),
 					Msg("destroy", "", null)
 				};
+				// primary_selection is ext v1 / zwlr v2; older compositors also send it to zwlr v1 clients.
 				var devEvents = new[]
 				{
 					Msg("data_offer", "n", ifOffer),
 					Msg("selection", "?o", ifOffer),
-					Msg("finished", "", null)
+					Msg("finished", "", null),
+					Msg("primary_selection", ext ? "?o" : "2?o", ifOffer)
 				};
 				FillInterface(ifDevice, p + "device_v1", 1, devMethods, devEvents);
 

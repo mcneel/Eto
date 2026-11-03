@@ -67,7 +67,8 @@ namespace Eto.GtkSharp.Forms
 			});
 #endif
 			
-			Control = GLib.Object.GetObject(app_indicator_new(Assembly.GetExecutingAssembly().FullName + Id, "", 0));
+			// app_indicator_new transfers its native reference to the caller.
+			Control = GLib.Object.GetObject(app_indicator_new(Assembly.GetExecutingAssembly().FullName + Id, "", 0), true);
 			app_indicator_set_menu(Control.Handle, (new Gtk.Menu()).Handle);
 
 			Id++;
@@ -89,9 +90,14 @@ namespace Eto.GtkSharp.Forms
 			set
 			{
 				RemoveTempImage();
-				imagePath = Path.GetTempFileName();
-
 				image = value;
+				if (image == null)
+				{
+					app_indicator_set_icon(Control.Handle, "");
+					return;
+				}
+
+				imagePath = Path.GetTempFileName();
 				image.ToGdk()?.Save(imagePath, "png");
 
 				app_indicator_set_icon(Control.Handle, imagePath);
@@ -148,6 +154,10 @@ namespace Eto.GtkSharp.Forms
 
 		protected override void Dispose(bool disposing)
 		{
+			if (menu?.Handler is ContextMenuHandler handler)
+				handler.Changed -= ContextMenu_Changed;
+			menu = null;
+			image = null;
 			if (Control != null)
 			{
 				Visible = false;
