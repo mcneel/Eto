@@ -101,12 +101,14 @@ public class TextBox : TextControl
 	/// <summary>
 	/// Event to handle when the <see cref="ReadOnly"/> property changes.
 	/// </summary>
+	/// <since>2.12</since>
 	public event EventHandler ReadOnlyChanged;
 	
 	/// <summary>
 	/// Raises the <see cref="ReadOnlyChanged"/> event.
 	/// </summary>
 	/// <param name="e">Event arguments</param>
+	/// <since>2.12</since>
 	protected virtual void OnReadOnlyChanged(EventArgs e) => ReadOnlyChanged?.Invoke(this, e);
 
 	/// <summary>
@@ -242,6 +244,7 @@ public class TextBox : TextControl
 	/// <summary>
 	/// Gets or sets a value indicating whether to always show the selection in the text box, even if it does not have focus.
 	/// </summary>
+	/// <since>2.10</since>
 	public bool AlwaysShowSelection
 	{
 		get => Handler.AlwaysShowSelection;
@@ -253,7 +256,18 @@ public class TextBox : TextControl
 	/// </summary>
 	/// <param name="location">Location relative to the text box.</param>
 	/// <returns>The character index closest to <paramref name="location"/>.</returns>
+	/// <since>2.12</since>
 	public int GetCharacterIndex(PointF location) => Handler.GetCharacterIndex(location);
+
+	/// <summary>
+	/// Gets the space between each edge of the control and its text, such as where the first character starts.
+	/// </summary>
+	/// <remarks>
+	/// Use this to line up other content with the text, for example a drop down of suggestions below the control.
+	/// </remarks>
+	/// <value>The distance from each edge of the control to its text.</value>
+	/// <since>2.14</since>
+	public PaddingF TextInset => Handler.TextInset;
 
 	/// <summary>
 	/// Handler interface for the <see cref="TextBox"/>.
@@ -339,6 +353,7 @@ public class TextBox : TextControl
 		/// <summary>
 		/// Gets or sets a value indicating whether to always show the selection in the text box, even if it does not have focus.
 		/// </summary>
+		/// <since>2.10</since>
 		bool AlwaysShowSelection { get; set; }
 
 		/// <summary>
@@ -346,7 +361,15 @@ public class TextBox : TextControl
 		/// </summary>
 		/// <param name="location">Location relative to the text box.</param>
 		/// <returns>The character index closest to <paramref name="location"/>.</returns>
+		/// <since>2.12</since>
 		int GetCharacterIndex(PointF location);
+
+		/// <summary>
+		/// Gets the space between each edge of the control and its text, such as where the first character starts.
+		/// </summary>
+		/// <value>The distance from each edge of the control to its text.</value>
+		/// <since>2.14</since>
+		PaddingF TextInset { get; }
 	}
 
 	#region Callback
