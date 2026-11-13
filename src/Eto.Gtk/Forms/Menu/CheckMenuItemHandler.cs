@@ -4,6 +4,7 @@ namespace Eto.GtkSharp.Forms.Menu
 {
 	public class CheckMenuItemHandler : MenuActionItemHandler<Gtk.CheckMenuItem, CheckMenuItem, CheckMenuItem.ICallback>, CheckMenuItem.IHandler
 	{
+		string text;
 		string tooltip;
 		Keys shortcut;
 		readonly Gtk.AccelLabel label;
@@ -69,11 +70,14 @@ namespace Eto.GtkSharp.Forms.Menu
 
 		public string Text
 		{
-			get { return label.Text; }
+			get { return text ?? string.Empty; }
 			set
 			{
-				label.Text = value.ToPlatformMnemonic();
-				label.UseUnderline = true;
+				if (text == value)
+					return;
+				text = value;
+				// One call: gtk_label_set_text clears use-underline, so a mirror of the label would read the marker as text.
+				label.TextWithMnemonic = value.ToPlatformMnemonic();
 			}
 		}
 

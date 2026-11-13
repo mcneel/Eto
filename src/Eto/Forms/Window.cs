@@ -193,6 +193,7 @@ public abstract class Window : Panel
 	/// <summary>
 	/// Identifier for handlers when attaching the <see cref="PreviewKeyDown"/> event.
 	/// </summary>
+	/// <since>2.12</since>
 	public const string PreviewKeyDownEvent = "Window.PreviewKeyDown";
 
 	/// <summary>
@@ -218,6 +219,7 @@ public abstract class Window : Panel
 	/// is inferred from the focused window at the time the key is dispatched, which can be wrong while
 	/// a platform modal or menu tracking loop is running.
 	/// </remarks>
+	/// <since>2.12</since>
 	public event EventHandler<KeyMonitorEventArgs> PreviewKeyDown
 	{
 		add { Properties.AddHandlerEvent(PreviewKeyDownEvent, value); }
@@ -228,6 +230,7 @@ public abstract class Window : Panel
 	/// Raises the <see cref="PreviewKeyDown"/> event.
 	/// </summary>
 	/// <param name="e">Event arguments</param>
+	/// <since>2.12</since>
 	protected virtual void OnPreviewKeyDown(KeyMonitorEventArgs e)
 	{
 		Properties.TriggerEvent(PreviewKeyDownEvent, this, e);
@@ -236,6 +239,7 @@ public abstract class Window : Panel
 	/// <summary>
 	/// Identifier for handlers when attaching the <see cref="PreviewKeyUp"/> event.
 	/// </summary>
+	/// <since>2.12</since>
 	public const string PreviewKeyUpEvent = "Window.PreviewKeyUp";
 
 	/// <summary>
@@ -245,6 +249,7 @@ public abstract class Window : Panel
 	/// See <see cref="PreviewKeyDown"/> for how this differs from <see cref="Control.KeyUp"/>, and for
 	/// the caveats that apply to both.
 	/// </remarks>
+	/// <since>2.12</since>
 	public event EventHandler<KeyMonitorEventArgs> PreviewKeyUp
 	{
 		add { Properties.AddHandlerEvent(PreviewKeyUpEvent, value); }
@@ -255,6 +260,7 @@ public abstract class Window : Panel
 	/// Raises the <see cref="PreviewKeyUp"/> event.
 	/// </summary>
 	/// <param name="e">Event arguments</param>
+	/// <since>2.12</since>
 	protected virtual void OnPreviewKeyUp(KeyMonitorEventArgs e)
 	{
 		Properties.TriggerEvent(PreviewKeyUpEvent, this, e);
@@ -412,6 +418,15 @@ public abstract class Window : Panel
 		if (IsDisposed)
 			return;
 		Handler.Close();
+	}
+
+	/// <inheritdoc/>
+	protected override void Dispose(bool disposing)
+	{
+		// A window disposed without closing never raises Closed, so it would otherwise stay in Application.Windows.
+		if (disposing)
+			Application.Instance?.RemoveWindow(this);
+		base.Dispose(disposing);
 	}
 
 	static readonly object OwnerKey = new object();
@@ -722,14 +737,17 @@ public abstract class Window : Panel
 		/// <summary>
 		/// Raises the load complete event.
 		/// </summary>
+		/// <since>2.9</since>
 		void OnLoadComplete(Window widget, EventArgs e);
 		/// <summary>
 		/// Raises the preview key down event.
 		/// </summary>
+		/// <since>2.12</since>
 		void OnPreviewKeyDown(Window widget, KeyMonitorEventArgs e);
 		/// <summary>
 		/// Raises the preview key up event.
 		/// </summary>
+		/// <since>2.12</since>
 		void OnPreviewKeyUp(Window widget, KeyMonitorEventArgs e);
 	}
 
@@ -781,6 +799,7 @@ public abstract class Window : Panel
 		/// <summary>
 		/// Raises the load completed event.
 		/// </summary>
+		/// <since>2.9</since>
 		public void OnLoadComplete(Window widget, EventArgs e)
 		{
 			using (widget.Platform.Context)
@@ -789,6 +808,7 @@ public abstract class Window : Panel
 		/// <summary>
 		/// Raises the preview key down event.
 		/// </summary>
+		/// <since>2.12</since>
 		public void OnPreviewKeyDown(Window widget, KeyMonitorEventArgs e)
 		{
 			using (widget.Platform.Context)
@@ -797,6 +817,7 @@ public abstract class Window : Panel
 		/// <summary>
 		/// Raises the preview key up event.
 		/// </summary>
+		/// <since>2.12</since>
 		public void OnPreviewKeyUp(Window widget, KeyMonitorEventArgs e)
 		{
 			using (widget.Platform.Context)
@@ -855,6 +876,7 @@ public abstract class Window : Panel
 		/// so the window is repositioned and resized in a single operation instead of two separate steps.
 		/// </remarks>
 		/// <value>The bounding rectangle of the window</value>
+		/// <since>2.12</since>
 		Rectangle Bounds { get; set; }
 
 		/// <summary>

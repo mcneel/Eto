@@ -280,7 +280,12 @@ namespace Eto.GtkSharp.Forms.Controls
 						cancel = tie.Cancel;
 					}
 					if (cancel)
+					{
 						NativeMethods.g_signal_stop_emission_by_name(handler.Control.Handle, "insert-text");
+						// GtkEntry moves the caret to this position once the signal returns, which would
+						// undo any caret change a handler made (e.g. MaskedTextBox advancing past literals).
+						args.Position = handler.CaretIndex;
+					}
 				}
 				finally
 				{
@@ -559,6 +564,25 @@ namespace Eto.GtkSharp.Forms.Controls
 				return Control.LayoutIndexToTextIndex(index + trailing);
 
 			return location.X <= layoutX ? 0 : text.Length;
+		}
+
+		public PaddingF TextInset
+		{
+			get
+			{
+#if GTK3
+				// the entry lays its text out inside its padding and border, which also works before it is allocated
+				var style = Control.StyleContext;
+				var padding = style.GetPadding(style.State);
+				var border = style.GetBorder(style.State);
+				return new PaddingF(padding.Left + border.Left, padding.Top + border.Top, padding.Right + border.Right, padding.Bottom + border.Bottom);
+#else
+				// the layout is offset by the alignment and scrolling, so this is only exact for left aligned text
+				Control.GetLayoutOffsets(out var layoutX, out var layoutY);
+				var x = layoutX + Control.ScrollOffset;
+				return new PaddingF(x, layoutY, x, layoutY);
+#endif
+			}
 		}
 
 		public TextAlignment TextAlignment

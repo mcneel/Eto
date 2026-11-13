@@ -131,7 +131,23 @@ public class ThemedTextStepperHandler : ThemedControlHandler<TableLayout, TextSt
 	/// </summary>
 	/// <param name="location">Location relative to the text box.</param>
 	/// <returns>The character index closest to <paramref name="location"/>.</returns>
+	/// <since>2.12</since>
 	public int GetCharacterIndex(PointF location) => TextBox.GetCharacterIndex(location);
+
+	/// <summary>
+	/// Gets the space between each edge of the control and its text, such as where the first character starts.
+	/// </summary>
+	/// <since>2.14</since>
+	public PaddingF TextInset
+	{
+		get
+		{
+			// the stepper sits to the right of the text box
+			var inset = TextBox.TextInset;
+			inset.Right += Math.Max(0, Control.Width - TextBox.Width);
+			return inset;
+		}
+	}
 
 	/// <summary>
 	/// Gets or sets a value indicating whether to show the control's border.
@@ -264,6 +280,7 @@ public class ThemedTextStepperHandler : ThemedControlHandler<TableLayout, TextSt
 	/// <summary>
 	/// Gets or sets a value indicating whether the selection should always be shown, even when the control does not have focus.
 	/// </summary>
+	/// <since>2.10</since>
 	public bool AlwaysShowSelection
 	{
 		get => TextBox.AlwaysShowSelection;
