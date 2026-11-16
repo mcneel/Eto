@@ -760,18 +760,33 @@ public class WebView2Handler : BaseHandler, WebView.IHandler
 			RunWhenReady(() => LoadHtml(html, baseUri));
 			return;
 		}
-		if (baseUri != null)
+		if (baseUri == null)
 		{
-			if (server == null)
-				server = new HttpServer();
-			server.SetHtml(html, baseUri != null ? baseUri.LocalPath : null);
-			Control.Source = server.Url;
+			try
+			{
+				Control.NavigateToString(html);
+				return;
+			}
+			catch (ArgumentException)
+			{
+				// NavigateToString rejects pages over 2 MB, so serve those from the local server instead.
+			}
 		}
-		else
-		{
-			Control.NavigateToString(html);
-		}
+		if (server == null)
+			server = new HttpServer();
+		server.SetHtml(html, baseUri?.LocalPath);
+		Control.Source = server.Url;
+	}
 
+	protected override void Dispose(bool disposing)
+	{
+		base.Dispose(disposing);
+
+		if (disposing && server != null)
+		{
+			server.Dispose();
+			server = null;
+		}
 	}
 
 	protected Microsoft.Web.WebView2.Core.CoreWebView2 CoreWebView2

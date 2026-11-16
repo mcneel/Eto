@@ -48,9 +48,17 @@ namespace Eto.CustomControls
 
 		public void ListenerCallback(IAsyncResult ar)
 		{
-			listener.BeginGetContext(ListenerCallback, null);
-
-			var context = listener.EndGetContext(ar);
+			HttpListenerContext context;
+			try
+			{
+				listener.BeginGetContext(ListenerCallback, null);
+				context = listener.EndGetContext(ar);
+			}
+			catch (Exception x) when (x is ObjectDisposedException || x is HttpListenerException)
+			{
+				// Closing the listener completes the pending request; throwing here would crash the app.
+				return;
+			}
 			var request = context.Request;
 			var response = context.Response;
 
