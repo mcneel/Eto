@@ -16,7 +16,12 @@ public enum WindowState
 	/// <summary>
 	/// Window is minimized to the dock/taskbar/etc.
 	/// </summary>
-	Minimized
+	Minimized,
+	/// <summary>
+	/// Window covers the entire screen without a border or title bar
+	/// </summary>
+	/// <since>2.14</since>
+	FullScreen
 }
 
 /// <summary>
@@ -71,7 +76,9 @@ public abstract class Window : Panel
 	/// <param name="e">Event arguments</param>
 	protected virtual void OnClosed(EventArgs e)
 	{
-		OnUnLoad(EventArgs.Empty);
+		// a window can be closed/disposed without ever being shown
+		if (Loaded)
+			OnUnLoad(EventArgs.Empty);
 		Properties.TriggerEvent(ClosedEvent, this, e);
 	}
 
@@ -297,6 +304,8 @@ public abstract class Window : Panel
 	/// </summary>
 	protected Window()
 	{
+		// always hooked so OnClosed can raise OnUnLoad, even with no Closed subscribers
+		HandleEvent(ClosedEvent);
 	}
 
 	/// <summary>
@@ -306,6 +315,8 @@ public abstract class Window : Panel
 	protected Window(IHandler handler)
 		: base(handler)
 	{
+		// always hooked so OnClosed can raise OnUnLoad, even with no Closed subscribers
+		HandleEvent(ClosedEvent);
 	}
 
 	/// <summary>
@@ -543,6 +554,21 @@ public abstract class Window : Panel
 	{
 		get { return Handler.Minimizable; }
 		set { Handler.Minimizable = value; }
+	}
+
+	/// <summary>
+	/// Gets or sets a value indicating whether the user can switch this window to and from <see cref="WindowState.FullScreen"/>.
+	/// </summary>
+	/// <remarks>
+	/// On macOS this is the green title bar button and Ctrl+Cmd+F, and defaults to <c>true</c>.
+	/// On other platforms the user presses F11, and it defaults to <c>false</c>.
+	/// Setting <see cref="WindowState"/> to <see cref="WindowState.FullScreen"/> works regardless of this value.
+	/// </remarks>
+	/// <since>2.14</since>
+	public bool AllowFullScreenToggle
+	{
+		get { return Handler.AllowFullScreenToggle; }
+		set { Handler.AllowFullScreenToggle = value; }
 	}
 
 	/// <summary>
@@ -937,6 +963,12 @@ public abstract class Window : Panel
 		/// </remarks>
 		/// <value><c>true</c> if maximizable; otherwise, <c>false</c>.</value>
 		bool Maximizable { get; set; }
+
+		/// <summary>
+		/// Gets or sets a value indicating whether the user can switch this window to and from <see cref="WindowState.FullScreen"/>.
+		/// </summary>
+		/// <since>2.14</since>
+		bool AllowFullScreenToggle { get; set; }
 
 		/// <summary>
 		/// Gets or sets a value indicating whether this <see cref="Eto.Forms.Window"/> can be minimized.

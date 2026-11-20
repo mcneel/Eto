@@ -9,8 +9,9 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
 
-    <!-- <EnableDmgBuild>True</EnableDmgBuild> -->
+    <!-- <MacPackageFormats>dmg;pkg</MacPackageFormats> -->
     <!-- <LinuxPackageFormats>deb;rpm;tar.gz;appimage</LinuxPackageFormats> -->
+    <!-- <WindowsPackageFormats>msi;setup;msix</WindowsPackageFormats> -->
     <!-- <EnableCompressionInSingleFile>True</EnableCompressionInSingleFile> -->
     <!-- <EnableCodeSigning>True</EnableCodeSigning> -->
     <!-- <EnableNotarization>True</EnableNotarization>     -->

@@ -135,6 +135,9 @@ namespace Eto.WinForms.Forms
 
 		protected override void Initialize()
 		{
+			// must be before any WindowStateChanged handler so the state is correct when it is raised
+			Control.Resize += Control_ResizeFullScreen;
+
 			if (IsAttached)
 				return;
 
@@ -275,7 +278,8 @@ namespace Eto.WinForms.Forms
 						if (Control.WindowState != oldState)
 						{
 							oldState = Control.WindowState;
-							Callback.OnWindowStateChanged(Widget, EventArgs.Empty);
+							if (!changingFullScreen)
+								Callback.OnWindowStateChanged(Widget, EventArgs.Empty);
 							if (!Closeable)
 								SetSystemMenu();
 						}
@@ -382,6 +386,9 @@ namespace Eto.WinForms.Forms
 
 		protected override void Dispose(bool disposing)
 		{
+			// disposing a form doesn't raise FormClosed, so unload like other platforms; it can't be cancelled so skip Closing
+			if (disposing && Widget.Loaded)
+				Callback.OnClosed(Widget, EventArgs.Empty);
 			DetachKeyMonitor();
 			base.Dispose(disposing);
 		}
@@ -459,7 +466,9 @@ namespace Eto.WinForms.Forms
 			{
 				if (value != resizable)
 				{
-					Control.FormBorderStyle = Control.FormBorderStyle.ToEto().ToSWF(value, DefaultWindowStyle);
+					// applied when leaving full screen
+					if (fullScreenWindowStyle == null)
+						Control.FormBorderStyle = Control.FormBorderStyle.ToEto().ToSWF(value, DefaultWindowStyle);
 					resizable = value;
 				}
 			}
@@ -607,7 +616,7 @@ namespace Eto.WinForms.Forms
 				switch (Control.WindowState)
 				{
 					case swf.FormWindowState.Maximized:
-						return WindowState.Maximized;
+						return fullScreenWindowStyle != null ? WindowState.FullScreen : WindowState.Maximized;
 					case swf.FormWindowState.Minimized:
 						return WindowState.Minimized;
 					case swf.FormWindowState.Normal:
@@ -620,14 +629,20 @@ namespace Eto.WinForms.Forms
 			{
 				switch (value)
 				{
+					case WindowState.FullScreen:
+						EnterFullScreen();
+						break;
 					case WindowState.Maximized:
-						Control.WindowState = swf.FormWindowState.Maximized;
+						if (!ExitFullScreen(swf.FormWindowState.Maximized))
+							Control.WindowState = swf.FormWindowState.Maximized;
 						break;
 					case WindowState.Minimized:
+						// stays full screen so restoring the window returns to it
 						Control.WindowState = swf.FormWindowState.Minimized;
 						break;
 					case WindowState.Normal:
-						Control.WindowState = swf.FormWindowState.Normal;
+						if (!ExitFullScreen(swf.FormWindowState.Normal))
+							Control.WindowState = swf.FormWindowState.Normal;
 						break;
 					default:
 						throw new NotSupportedException();
@@ -635,10 +650,107 @@ namespace Eto.WinForms.Forms
 			}
 		}
 
+		// the style to restore when leaving full screen, or null when not full screen
+		WindowStyle? fullScreenWindowStyle;
+		Rectangle fullScreenRestoreBounds;
+		swf.FormWindowState fullScreenPreviousState;
+		bool changingFullScreen;
+		bool allowFullScreenToggle;
+
+		public bool AllowFullScreenToggle
+		{
+			get => allowFullScreenToggle;
+			set
+			{
+				if (allowFullScreenToggle == value)
+					return;
+				allowFullScreenToggle = value;
+				if (value)
+					Widget.KeyDown += Widget_KeyDownFullScreen;
+				else
+					Widget.KeyDown -= Widget_KeyDownFullScreen;
+			}
+		}
+
+		void Widget_KeyDownFullScreen(object sender, KeyEventArgs e)
+		{
+			if (e.Handled || e.KeyData != Keys.F11)
+				return;
+			e.Handled = true;
+			if (WindowState == WindowState.FullScreen)
+				ExitFullScreen(fullScreenPreviousState);
+			else
+				EnterFullScreen();
+		}
+
+		void EnterFullScreen()
+		{
+			if (fullScreenWindowStyle != null)
+			{
+				if (Control.WindowState == swf.FormWindowState.Minimized)
+					Control.WindowState = swf.FormWindowState.Maximized;
+				return;
+			}
+			fullScreenPreviousState = Control.WindowState == swf.FormWindowState.Maximized ? swf.FormWindowState.Maximized : swf.FormWindowState.Normal;
+			ChangeFullScreen(() =>
+			{
+				// a borderless window only covers the taskbar when it is maximized after removing the border
+				Control.WindowState = swf.FormWindowState.Normal;
+				fullScreenRestoreBounds = Widget.Bounds;
+				fullScreenWindowStyle = WindowStyle;
+				Control.FormBorderStyle = swf.FormBorderStyle.None;
+				Control.WindowState = swf.FormWindowState.Maximized;
+			});
+		}
+
+		bool ExitFullScreen(swf.FormWindowState state)
+		{
+			if (fullScreenWindowStyle == null)
+				return false;
+			ChangeFullScreen(() =>
+			{
+				Control.WindowState = swf.FormWindowState.Normal;
+				RestoreFromFullScreen();
+				Control.WindowState = state;
+			});
+			return true;
+		}
+
+		void RestoreFromFullScreen()
+		{
+			var style = fullScreenWindowStyle.Value;
+			fullScreenWindowStyle = null;
+			Control.FormBorderStyle = style.ToSWF(resizable, DefaultWindowStyle);
+		}
+
+		void ChangeFullScreen(Action action)
+		{
+			// raise a single state change rather than one for each step
+			changingFullScreen = true;
+			try
+			{
+				action();
+			}
+			finally
+			{
+				changingFullScreen = false;
+			}
+			Callback.OnWindowStateChanged(Widget, EventArgs.Empty);
+		}
+
+		void Control_ResizeFullScreen(object sender, EventArgs e)
+		{
+			// e.g. Win+Down un-maximizes the window, so it is no longer full screen
+			if (!changingFullScreen && fullScreenWindowStyle != null && Control.WindowState == swf.FormWindowState.Normal)
+				RestoreFromFullScreen();
+		}
+
 		public Rectangle RestoreBounds
 		{
 			get
 			{
+				if (fullScreenWindowStyle != null)
+					return fullScreenRestoreBounds;
 				if (WindowState == WindowState.Normal || Control.RestoreBounds.IsEmpty)
 					return Widget.Bounds;
 				return Control.RestoreBounds.ToEto();
@@ -660,8 +772,15 @@ namespace Eto.WinForms.Forms
 
 		public WindowStyle WindowStyle
 		{
-			get { return Control.FormBorderStyle.ToEto(); }
-			set { Control.FormBorderStyle = value.ToSWF(resizable, DefaultWindowStyle); }
+			get { return fullScreenWindowStyle ?? Control.FormBorderStyle.ToEto(); }
+			set
+			{
+				// applied when leaving full screen
+				if (fullScreenWindowStyle != null)
+					fullScreenWindowStyle = value;
+				else
+					Control.FormBorderStyle = value.ToSWF(resizable, DefaultWindowStyle);
+			}
 		}
 
 		public virtual void BringToFront()
